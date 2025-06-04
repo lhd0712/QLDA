@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Day View</title>
+	<style>
+		body {
+			font-family: system-ui;
+		}
+	</style>
+</head>
+<body>
+	<div style="background: #FFFFFF;">
+		<!-- Ví dụ render sự kiện động -->
+		<div style="padding: 24px;">
+			<h2>Danh sách sự kiện của bạn</h2>
+			<ul>
+				{% for todo in todos %}
+					<li>{{ todo.task }}</li>
+				{% else %}
+					<li>Không có sự kiện nào.</li>
+				{% endfor %}
+			</ul>
+			<p>Hôm nay: {{ today.strftime('%d/%m/%Y') }}</p>
+		</div>
+		<!-- ...bạn có thể bổ sung render lịch, sự kiện theo ngày... -->
+	</div>
+</body>
+</html>

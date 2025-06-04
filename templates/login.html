@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Login</title>
+	<style>
+		body {
+			font-family: system-ui;
+			background: #f2f2f2;
+		}
+		.center-container {
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			height: 100vh;
+		}
+		.login-box {
+			background: #fff;
+			border-radius: 15px;
+			box-shadow: 0 2px 16px rgba(0,0,0,0.12);
+			padding: 48px 40px 32px 40px;
+			width: 400px;
+			position: relative;
+		}
+		.login-title {
+			font-size: 36px;
+			font-weight: bold;
+			margin-bottom: 32px;
+			text-align: center;
+		}
+		.input-label {
+			font-size: 18px;
+			margin-bottom: 8px;
+			margin-left: 4px;
+		}
+		.input {
+			width: 100%;
+			font-size: 20px;
+			padding: 16px 12px;
+			margin-bottom: 24px;
+			border-radius: 8px;
+			border: 1px solid #ccc;
+			background: #F4F1F1;
+			box-sizing: border-box;
+		}
+		.login-btn {
+			width: 100%;
+			padding: 14px 0;
+			background: #43BCF0;
+			color: #fff;
+			font-size: 22px;
+			font-weight: bold;
+			border: none;
+			border-radius: 8px;
+			cursor: pointer;
+			margin-bottom: 18px;
+			transition: background 0.2s;
+		}
+		.login-btn:hover {
+			background: #1e90d6;
+		}
+		.links {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			margin-bottom: 18px;
+		}
+		.links a {
+			color: #007bff;
+			text-decoration: none;
+			font-size: 16px;
+		}
+		.links a:hover {
+			text-decoration: underline;
+		}
+		.or {
+			text-align: center;
+			margin: 18px 0 10px 0;
+			color: #888;
+			font-size: 16px;
+		}
+		.social-btns {
+			display: flex;
+			justify-content: center;
+			gap: 16px;
+		}
+		.social-btn {
+			display: flex;
+			align-items: center;
+			gap: 8px;
+			border: 1px solid #ccc;
+			border-radius: 6px;
+			padding: 8px 18px;
+			background: #fff;
+			cursor: pointer;
+			font-size: 16px;
+			transition: border 0.2s;
+		}
+		.social-btn:hover {
+			border: 1px solid #43BCF0;
+		}
+		.social-btn img {
+			height: 28px;
+			width: 28px;
+		}
+		.error-message {
+			color: red;
+			text-align: center;
+			margin-bottom: 12px;
+		}
+	</style>
+</head>
+<body>
+	<div class="center-container">
+		<div class="login-box">
+			<div class="login-title">Login</div>
+			<form method="post" action="/login">
+				<label class="input-label" for="username">E-mail or Username</label>
+				<input type="text" name="username" id="username" placeholder="Username" class="input" required />
+				<label class="input-label" for="password">Password</label>
+				<input type="password" name="password" id="password" placeholder="Password" class="input" required />
+				<button type="submit" class="login-btn">Login</button>
+				{% if error %}
+					<div class="error-message">{{ error }}</div>
+				{% endif %}
+				{% if message %}
+					<div class="error-message" style="color:green;">{{ message }}</div>
+				{% endif %}
+				<div class="links">
+					<a href="/register">Sign up</a>
+					<a href="/forgot-password">Forget my password</a>
+				</div>
+				<div class="or">OR</div>
+				<div class="social-btns">
+					<button type="button" class="social-btn" onclick="alert('Sign in with Facebook!')">
+						<span>Sign in with</span>
+						<img src="https://figma-alpha-api.s3.us-west-2.amazonaws.com/images/d6124f04-bdfa-442d-9fdb-f1ac6200adf8" alt="Facebook" />
+					</button>
+					<button type="button" class="social-btn" onclick="alert('Sign in with Google!')">
+						<span>Sign in with</span>
+						<img src="https://figma-alpha-api.s3.us-west-2.amazonaws.com/images/48c47605-f51a-4358-a046-81a197c2f8e2" alt="Google" />
+					</button>
+				</div>
+			</form>
+		</div>
+	</div>
+</body>
+</html>
