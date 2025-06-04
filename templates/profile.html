@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Edit Profile</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      padding: 40px;
+      background: #fafafa;
+    }
+    .container {
+      display: flex;
+      gap: 20px;
+    }
+    .profile-card {
+      width: 250px;
+      background: #fff;
+      padding: 20px;
+      border-radius: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+    .profile-card img {
+      width: 120px;
+      height: 120px;
+      object-fit: cover;
+      border-radius: 50%;
+      margin-bottom: 10px;
+    }
+    .profile-card h3 {
+      margin: 10px 0 5px;
+    }
+    .profile-card p {
+      color: #777;
+      margin: 0 0 20px;
+    }
+    .profile-card button {
+      background: #f65362;
+      color: #fff;
+      padding: 8px 14px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .edit-form {
+      flex: 1;
+      background: #fff;
+      padding: 20px;
+      border-radius: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .tabs {
+      display: flex;
+      border-bottom: 2px solid #ddd;
+      margin-bottom: 20px;
+    }
+    .tabs div {
+      padding: 10px 20px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .tabs .active {
+      border-bottom: 3px solid #000;
+    }
+    .form-group {
+      display: flex;
+      gap: 20px;
+      margin-bottom: 15px;
+    }
+    .form-group label {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    .form-group input {
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      margin-top: 5px;
+    }
+    .submit-btn {
+      background: #f65362;
+      color: #fff;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="profile-card">
+    <img src="{% if user and (user.username|default('')) and (user.username+'.png') in (os.listdir('static/avatar') if os.path.exists('static/avatar') else []) %}/static/avatar/{{ user.username }}.png{% else %}https://via.placeholder.com/120{% endif %}" alt="Avatar" style="cursor:pointer" onclick="window.location.href='/profile'">
+    <h3>{{ user.fullname }}</h3>
+    <p>@{{ user.username }}</p>
+    <form method="post" enctype="multipart/form-data" style="margin-bottom:0;">
+      <input type="file" name="avatar" accept="image/*" style="display:none;" id="avatarInput" onchange="this.form.submit()">
+      <button type="button" onclick="document.getElementById('avatarInput').click();">Choose photo</button>
+    </form>
+    <form action="/logout" method="get" style="margin-top:10px;">
+      <button type="submit" style="background:#eee;color:#f65362;border:none;border-radius:8px;padding:8px 14px;cursor:pointer;">Log out</button>
+    </form>
+  </div>
+  <div class="edit-form">
+    <div style="display:flex;align-items:center;justify-content:space-between;">
+      <h2>Edit profile</h2>
+      <a href="/day" style="color:#0B41FF; text-decoration:underline; font-size:16px;">&larr; Back to calendar</a>
+    </div>
+    <div class="tabs">
+      <div class="active" id="tab-info-btn" onclick="showTab('info')">Edit info</div>
+      <div id="tab-account-btn" onclick="showTab('account')">Edit account</div>
+    </div>
+    <div id="tab-info">
+      <form method="post">
+        <div class="form-group">
+          <label>Name
+            <input type="text" name="fullname" value="{{ user.fullname }}">
+          </label>
+          <label>DoB
+            <input type="date" name="dob" value="{{ user.dob if user.dob else '' }}">
+          </label>
+        </div>
+        <div class="form-group">
+          <label>Phone
+            <input type="text" name="phone" value="{{ user.phone if user.phone else '' }}">
+          </label>
+          <label>Address
+            <input type="text" name="address" value="{{ user.address if user.address else '' }}">
+          </label>
+        </div>
+        <div class="form-group">
+          <label>Gender
+            <select name="gender">
+              <option value="" {% if not user.gender %}selected{% endif %}>Select gender</option>
+              <option value="male" {% if user.gender == 'male' %}selected{% endif %}>Male</option>
+              <option value="female" {% if user.gender == 'female' %}selected{% endif %}>Female</option>
+              <option value="other" {% if user.gender == 'other' %}selected{% endif %}>Other</option>
+            </select>
+          </label>
+          <label>Email
+            <input type="email" name="email" value="{{ user.email if user.email else '' }}">
+          </label>
+        </div>
+        <button class="submit-btn" type="submit">Update information</button>
+        {% if message and not error and not active_tab %}<div style="color:green; margin-top:10px;">{{ message }}</div>{% endif %}
+      </form>
+    </div>
+    <div id="tab-account" style="display:none;">
+      <form method="post" style="margin-bottom:10px;">
+        <div class="form-group">
+          <label>Change password
+            <input type="password" name="new_password" placeholder="New password">
+          </label>
+          <label>Re-enter password
+            <input type="password" name="re_password" placeholder="Re-enter new password">
+          </label>
+        </div>
+        <button class="submit-btn" type="submit" name="change_password" value="1">Change password</button>
+        {% if show_account_msg and message and (error is not none) and request.form.get('change_password') %}
+          <div style="color:{{ 'red' if error else 'green' }}; margin-top:10px;">{{ message }}</div>
+        {% endif %}
+      </form>
+      <form method="post">
+        <div class="form-group">
+          <label>Change pincode
+            <input type="text" name="new_pincode" placeholder="New pincode">
+          </label>
+          <label>Re-enter pincode
+            <input type="text" name="re_pincode" placeholder="Re-enter new pincode">
+          </label>
+        </div>
+        <button class="submit-btn" type="submit" name="change_pincode" value="1">Change pincode</button>
+        {% if show_account_msg and message and (error is not none) and request.form.get('change_pincode') %}
+          <div style="color:{{ 'red' if error else 'green' }}; margin-top:10px;">{{ message }}</div>
+        {% endif %}
+      </form>
+    </div>
+    <script>
+      function showTab(tab) {
+        document.getElementById('tab-info').style.display = (tab === 'info') ? '' : 'none';
+        document.getElementById('tab-account').style.display = (tab === 'account') ? '' : 'none';
+        document.getElementById('tab-info-btn').classList.toggle('active', tab === 'info');
+        document.getElementById('tab-account-btn').classList.toggle('active', tab === 'account');
+        localStorage.setItem('profileTab', tab);
+      }
+      // Giữ tab khi submit form
+      window.onload = function() {
+        var tab = '{{ active_tab if active_tab else '' }}' || localStorage.getItem('profileTab') || 'info';
+        showTab(tab);
+      };
+    </script>
+  </div>
+</div>
+
+</body>
+</html>

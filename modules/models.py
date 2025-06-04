@@ -8,6 +8,11 @@ class User(db.Model):
     password = db.Column(db.String(128), nullable=False)
     fullname = db.Column(db.String(128), nullable=False)
     pincode = db.Column(db.String(32), nullable=False)
+    dob = db.Column(db.Date, nullable=True)
+    phone = db.Column(db.String(32), nullable=True)
+    address = db.Column(db.String(255), nullable=True)
+    gender = db.Column(db.String(16), nullable=True)
+    email = db.Column(db.String(128), nullable=True)
 
 class Todo(db.Model):
     id = db.Column(db.Integer, primary_key=True)
