@@ -19,3 +19,13 @@ class Todo(db.Model):
     task = db.Column(db.String(255), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     user = db.relationship('User', backref=db.backref('todos', lazy=True))
+    # Thông tin chi tiết từng cột
+    start_date = db.Column(db.Date, nullable=True)
+    end_date = db.Column(db.Date, nullable=True)
+    start_time = db.Column(db.Time, nullable=True)
+    end_time = db.Column(db.Time, nullable=True)
+    reminder = db.Column(db.String(32), nullable=True)
+    repeat = db.Column(db.String(32), nullable=True)
+    tag = db.Column(db.String(64), nullable=True)
+    location = db.Column(db.String(255), nullable=True)
+    description = db.Column(db.Text, nullable=True)

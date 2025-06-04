@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Add Event</title>
+	<style>
+		body {
+			font-family: system-ui;
+			background: #fafafa;
+		}
+		.add-event-container {
+			max-width: 600px;
+			margin: 40px auto;
+			background: #fff;
+			border-radius: 16px;
+			box-shadow: 0 2px 12px #0001;
+			padding: 32px 36px 24px 36px;
+		}
+		.add-event-title {
+			font-size: 28px;
+			font-weight: bold;
+			margin-bottom: 24px;
+			color: #4828FA;
+			text-align: center;
+		}
+		.form-row {
+			display: flex;
+			gap: 18px;
+			margin-bottom: 18px;
+		}
+		.form-row label {
+			flex: 1;
+			display: flex;
+			flex-direction: column;
+			font-weight: 500;
+			color: #333;
+			font-size: 16px;
+		}
+		input, select, textarea {
+			margin-top: 6px;
+			padding: 10px;
+			border-radius: 8px;
+			border: 1px solid #ccc;
+			font-size: 16px;
+			background: #f7f7f7;
+		}
+		textarea {
+			resize: vertical;
+			min-height: 48px;
+		}
+		.add-event-actions {
+			display: flex;
+			justify-content: flex-end;
+			gap: 16px;
+			margin-top: 24px;
+		}
+		.add-event-actions button {
+			background: #4828FA;
+			color: #fff;
+			border: none;
+			border-radius: 10px;
+			padding: 10px 28px;
+			font-size: 18px;
+			font-weight: bold;
+			cursor: pointer;
+			transition: background 0.2s;
+		}
+		.add-event-actions button.cancel {
+			background: #bbb;
+			color: #fff;
+		}
+	</style>
+</head>
+<body>
+<div class="add-event-container">
+	<div class="add-event-title">Add New Event</div>
+	<form method="post" action="">
+		<div class="form-row">
+			<label>Event Title
+				<input type="text" name="title" placeholder="Event name" required />
+			</label>
+		</div>
+		<div class="form-row">
+			<label>Start Date
+				<input type="date" name="start_date" required />
+			</label>
+			<label>End Date
+				<input type="date" name="end_date" required />
+			</label>
+		</div>
+		<div class="form-row">
+			<label>Start Time
+				<input type="time" name="start_time" required />
+			</label>
+			<label>End Time
+				<input type="time" name="end_time" required />
+			</label>
+		</div>
+		<div class="form-row">
+			<label>Reminder
+				<select name="reminder">
+					<option value="none">None</option>
+					<option value="5">5 minutes before</option>
+					<option value="10">10 minutes before</option>
+					<option value="30">30 minutes before</option>
+					<option value="60">1 hour before</option>
+				</select>
+			</label>
+			<label>Repeat
+				<select name="repeat">
+					<option value="none">None</option>
+					<option value="daily">Daily</option>
+					<option value="weekly">Weekly</option>
+					<option value="monthly">Monthly</option>
+				</select>
+			</label>
+		</div>
+		<div class="form-row">
+			<label>Tag
+				<input type="text" name="tag" placeholder="Tag (optional)" />
+			</label>
+			<label>Location
+				<input type="text" name="location" placeholder="Location (optional)" />
+			</label>
+		</div>
+		<div class="form-row">
+			<label>Description
+				<textarea name="description" placeholder="Description (optional)"></textarea>
+			</label>
+		</div>
+		<div class="add-event-actions">
+			<button type="button" class="cancel" onclick="window.location.href='/day'">Cancel</button>
+			<button type="submit">Save</button>
+		</div>
+	</form>
+</div>
+</body>
+</html>

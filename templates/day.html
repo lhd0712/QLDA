@@ -126,7 +126,7 @@
 							/>
 						</div>
 						<button style="flex-shrink: 0; display: flex; align-items: center; background: #0B41FF; border-radius: 3px; border: none; padding: 8px; gap: 4px; text-align: left;"
-							onclick="alert('Pressed!')"}>
+							onclick="window.location.href='/add-event'">
 							<span style="color: #FFFFFF; font-size: 12px; font-weight: bold;" >
 								Add event
 							</span>
@@ -150,14 +150,16 @@
 					  {% for hour in range(24) %}
 					    <div style="height: 48px; box-sizing: border-box; align-self: stretch; background: #FFFFFF; border: 1px solid #61646A99; display: flex; align-items: flex-start; padding: 4px 8px; margin-bottom: 0; position: relative;">
 					      {% set time_str = '%02d:00' % hour %}
-					      {% for event in events if event.time == time_str %}
-					        <div style="display: flex; flex-direction: column; align-items: flex-start; background: #BDFFDB; border-radius: 3px; border: 1px solid #8EDBB2; padding: 4px 8px; margin-bottom: 2px; gap: 2px; min-width: 120px;">
-					          <div style="display: flex; justify-content: space-between; align-items: flex-start; width: 100%;">
-					            <span style="color: #2C5A41; font-size: 12px; font-weight: bold;">{{ event.name }}</span>
-					            <span style="color: #2C5A41; font-size: 12px; font-weight: bold;">{{ event.time }}</span>
+					      {% for todo in todos %}
+					        {% if todo.start_time and todo.start_time.strftime('%H:00') == time_str %}
+					          <div style="display: flex; flex-direction: column; align-items: flex-start; background: #BDFFDB; border-radius: 3px; border: 1px solid #8EDBB2; padding: 4px 8px; margin-bottom: 2px; gap: 2px; min-width: 120px;">
+					            <div style="display: flex; justify-content: space-between; align-items: flex-start; width: 100%;">
+					              <span style="color: #2C5A41; font-size: 12px; font-weight: bold;">{{ todo.task }}</span>
+					              <span style="color: #2C5A41; font-size: 12px; font-weight: bold;">{{ todo.start_time.strftime('%H:%M') }}</span>
+					            </div>
+					            <span style="color: #2C5A41; font-size: 11px;">{{ todo.description }}</span>
 					          </div>
-					          <span style="color: #2C5A41; font-size: 11px;">{{ event.description }}</span>
-					        </div>
+					        {% endif %}
 					      {% endfor %}
 					    </div>
 					  {% endfor %}
@@ -208,14 +210,8 @@
 		document.querySelectorAll('.calendar-day').forEach(btn => {
 			btn.onclick = function() {
 				const dateStr = this.getAttribute('data-date');
-				selectedDate = dateStr;
-				renderCalendar(currentMonth, currentYear, selectedDate);
-				const mainDate = new Date(dateStr);
-				const day = String(mainDate.getDate()).padStart(2, '0');
-				const monthName = mainDate.toLocaleString('default', { month: 'long' });
-				const year = mainDate.getFullYear();
-				document.querySelectorAll('span[style*="font-size: 30px"]')[0].textContent = `${day} ${monthName} ${year}`;
-				// TODO: fetch and show events for this date
+				// Chuyển hướng sang backend để lấy event đúng ngày
+				window.location.href = '/day?date=' + dateStr;
 			};
 		});
 	}
@@ -224,13 +220,27 @@
 
 	// Lấy ngày hiện tại làm ngày chọn mặc định khi load trang
 	window.onload = function() {
-		const defaultDate = new Date(currentYear, currentMonth, today.getDate());
-		selectedDate = `${defaultDate.getFullYear()}-${defaultDate.getMonth()+1}-${defaultDate.getDate()}`;
-		renderCalendar(currentMonth, currentYear, selectedDate);
+		// Lấy ngày từ query string nếu có
+		const params = new URLSearchParams(window.location.search);
+		let dateStr = params.get('date');
+		let defaultDate;
+		if (dateStr) {
+			// Định dạng YYYY-MM-DD
+			const [y, m, d] = dateStr.split('-').map(Number);
+			defaultDate = new Date(y, m - 1, d);
+			selectedDate = dateStr;
+		} else {
+			defaultDate = new Date(currentYear, currentMonth, today.getDate());
+			selectedDate = `${defaultDate.getFullYear()}-${defaultDate.getMonth()+1}-${defaultDate.getDate()}`;
+		}
+		renderCalendar(defaultDate.getMonth(), defaultDate.getFullYear(), selectedDate);
 		// Cập nhật ngày lớn
 		const day = String(defaultDate.getDate()).padStart(2, '0');
 		const monthName = defaultDate.toLocaleString('default', { month: 'long' });
 		document.querySelectorAll('span[style*="font-size: 30px"]')[0].textContent = `${day} ${monthName} ${defaultDate.getFullYear()}`;
+		// Cập nhật lại currentMonth/currentYear để điều hướng tháng đúng
+		currentMonth = defaultDate.getMonth();
+		currentYear = defaultDate.getFullYear();
 	};
 
 	prevMonthBtn.onclick = function() {
