@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lịch tuần</title>
+    <style>
+        body {
+            font-family: system-ui;
+            background: #F7F9FB;
+        }
+        .main-week {
+            background: #FFFFFF;
+            min-height: 100vh;
+            position: relative;
+        }
+        .week-header-bar {
+            align-self: stretch;
+            display: flex;
+            align-items: flex-start;
+            background: #FFFFFF;
+            border-bottom: 1px solid #DADCE099;
+            padding: 6px 16px 16px 16px;
+            margin-left: 1px;
+            margin-right: 1px;
+        }
+        .week-title {
+            color: #333333;
+            font-size: 30px;
+            font-weight: bold;
+            margin-right: 21px;
+        }
+        .week-switch-btn {
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            background: none;
+            border-radius: 3px;
+            border: 1px solid #0B41FF;
+            padding: 8px;
+            text-align: left;
+            cursor: pointer;
+        }
+        .week-switch-btn span {
+            color: #0B41FF;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .week-content {
+            display: flex;
+            align-items: flex-start;
+            margin-left: 1px;
+            margin-right: 1px;
+        }
+        .week-hour-col {
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 60px;
+        }
+        .week-hour-row {
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-bottom: 1px solid #eee;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .week-grid {
+            flex: 1;
+            position: relative;
+            min-height: 1152px;
+            background: #fff;
+            border-radius: 6px;
+            overflow: visible;
+            display: flex;
+        }
+        .week-day-col {
+            flex: 1;
+            border-left: 1px solid #eee;
+            position: relative;
+        }
+        .week-day-label {
+            text-align: center;
+            font-size: 15px;
+            font-weight: bold;
+            color: #0B41FF;
+            background: #F5F8FF;
+            padding: 6px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .event-block {
+            position: absolute;
+            left: 4px;
+            right: 4px;
+            min-height: 36px;
+            background: #BDFFDB;
+            border-radius: 4px;
+            border: 1.5px solid #8EDBB2;
+            box-shadow: 0 2px 8px #0001;
+            padding: 6px 10px;
+            cursor: pointer;
+            overflow: hidden;
+            z-index: 2;
+            margin-bottom: 2px;
+        }
+        .event-block .event-title {
+            font-size: 13px;
+            font-weight: bold;
+            color: #2C5A41;
+        }
+        .event-block .event-time {
+            font-size: 12px;
+            color: #2C5A41;
+            font-weight: bold;
+        }
+        .event-block .event-desc {
+            font-size: 11px;
+            color: #2C5A41;
+            white-space: pre-line;
+        }
+    </style>
+</head>
+<body>
+<div class="main-week">
+    <div class="week-header-bar">
+        <span class="week-title" id="weekTitle">{{ week_range }}</span>
+        <button class="week-switch-btn" onclick="window.location.href='/day?date='+encodeURIComponent(selectedDate)">
+            <span>Day</span>
+        </button>
+        <button class="week-switch-btn" onclick="window.location.href='/month?date='+encodeURIComponent(selectedDate)">
+            <span>Month</span>
+        </button>
+        <button class="week-switch-btn" onclick="changeWeek(-1)">
+            <span>&lt; Tuần trước</span>
+        </button>
+        <button class="week-switch-btn" onclick="goToCurrentWeek()">
+            <span>Hiện tại</span>
+        </button>
+        <button class="week-switch-btn" onclick="changeWeek(1)">
+            <span>Tuần sau &gt;</span>
+        </button>
+    </div>
+    <div class="week-content">
+        <div class="week-hour-col">
+            {% for hour in range(24) %}
+            <div class="week-hour-row">
+                <span style="color: #333333; font-size: 12px; font-weight: bold;">{{ '%02d:00' % hour }}</span>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="week-grid">
+            {% for day in week_days %}
+            <div class="week-day-col">
+                <div class="week-day-label">{{ day.strftime('%a') }}<br>{{ day.strftime('%d/%m') }}</div>
+                {% for event in events_by_day[day] %}
+                    {% set start_minutes = event.start_time.hour * 60 + event.start_time.minute if event.start_time else 0 %}
+                    {% set end_minutes = event.end_time.hour * 60 + event.end_time.minute if event.end_time else (start_minutes + 60) %}
+                    {% set top = (start_minutes / 60) * 48 %}
+                    {% set height = ((end_minutes - start_minutes) / 60) * 48 %}
+                    {% set tag_color = {
+                        'work':   '#B2D7FF',
+                        'study':  '#FFE6A7',
+                        'personal': '#FFD6E0',
+                        'meeting': '#D6FFD6',
+                        'health': '#E0D6FF',
+                        'family': '#FFF2B2',
+                        'travel': '#B2FFF2',
+                        'other':  '#F5F5F5'
+                    }.get(event.tag|lower, '#BDFFDB') %}
+                    {% set tag_border = {
+                        'work':   '#5CA8F7',
+                        'study':  '#FFC14A',
+                        'personal': '#FF7A9E',
+                        'meeting': '#8EDBB2',
+                        'health': '#A18CFF',
+                        'family': '#FFD84A',
+                        'travel': '#4ADBC1',
+                        'other':  '#DADCE0'
+                    }.get(event.tag|lower, '#8EDBB2') %}
+                    <div class="event-block" style="top: {{ top }}px; height: {{ height }}px; background: {{ tag_color }}; border-color: {{ tag_border }};" onclick="window.location.href='/edit-event/{{ event.id }}'">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; width: 100%;">
+                            <span class="event-title">{{ event.task }}</span>
+                            <span class="event-time">{{ event.start_time.strftime('%H:%M') if event.start_time else '' }}-{{ event.end_time.strftime('%H:%M') if event.end_time else '' }}</span>
+                        </div>
+                        <span class="event-desc">{{ event.description }}</span>
+                    </div>
+                {% endfor %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+<script>
+let selectedDate = null;
+window.onload = function() {
+    const params = new URLSearchParams(window.location.search);
+    let dateStr = params.get('date');
+    if (dateStr) {
+        selectedDate = dateStr;
+    } else {
+        const today = new Date();
+        selectedDate = `${today.getFullYear()}-${(today.getMonth()+1).toString().padStart(2,'0')}-${today.getDate().toString().padStart(2,'0')}`;
+    }
+    // Cập nhật lại các nút chuyển view để truyền đúng selectedDate
+    document.querySelectorAll('.week-switch-btn').forEach(btn => {
+        if (btn.textContent.trim() === 'Month') {
+            btn.onclick = function() {
+                window.location.href = '/month?date=' + encodeURIComponent(selectedDate);
+            }
+        }
+        if (btn.textContent.trim() === 'Day') {
+            btn.onclick = function() {
+                window.location.href = '/day?date=' + encodeURIComponent(selectedDate);
+            }
+        }
+    });
+};
+function changeWeek(offset) {
+    const params = new URLSearchParams(window.location.search);
+    let date = params.get('date');
+    if (!date) {
+        const today = new Date();
+        date = `${today.getFullYear()}-${today.getMonth()+1}-${today.getDate()}`;
+    }
+    // Lấy ngày hiện tại từ query hoặc mặc định, chuyển sang đối tượng Date
+    let d = new Date(date);
+    if (isNaN(d.getTime())) {
+        // Nếu parse lỗi, fallback về hôm nay
+        d = new Date();
+    }
+    // offset: +1 tuần hoặc -1 tuần
+    d.setDate(d.getDate() + offset * 7);
+    // Định dạng lại yyyy-m-d
+    const newDate = `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
+    window.location.href = '/week?date=' + newDate;
+}
+function goToCurrentWeek() {
+    const today = new Date();
+    const dateStr = `${today.getFullYear()}-${(today.getMonth()+1)}-${today.getDate()}`;
+    window.location.href = '/week?date=' + dateStr;
+}
+</script>
+</body>
+</html>

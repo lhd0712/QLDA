@@ -1,8 +1,12 @@
 from flask import Blueprint, render_template, request, session, redirect, url_for
 from modules.models import db, Todo, User
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
+import calendar
 
 todo_bp = Blueprint('todo', __name__)
+
+# Danh sách tag mặc định
+DEFAULT_TAGS = ['work', 'personal', 'meeting', 'study', 'family', 'health', 'travel', 'finance', 'shopping', 'other']
 
 @todo_bp.route('/todo', methods=['GET', 'POST'])
 def todo():
@@ -14,7 +18,6 @@ def day_view():
         return redirect(url_for('auth.login'))
     user = User.query.filter_by(username=session['username']).first()
     # Lấy ngày hiện tại hoặc ngày được chọn từ query string
-    from flask import request
     date_str = request.args.get('date')
     if date_str:
         try:
@@ -25,14 +28,49 @@ def day_view():
         selected_date = date.today()
     # Lọc event theo ngày bắt đầu (start_date)
     todos = Todo.query.filter_by(user_id=user.id, start_date=selected_date).all()
+    # Lấy event ngày mai
+    tomorrow = selected_date + timedelta(days=1)
+    todos_tomorrow = Todo.query.filter_by(user_id=user.id, start_date=tomorrow).all()
+
+    # Lấy danh sách tag duy nhất (từ DB và mặc định, loại trùng, loại rỗng)
+    all_tags = db.session.query(Todo.tag).filter(Todo.user_id==user.id, Todo.tag!=None, Todo.tag!='').distinct().all()
+    tag_list = list({t[0] for t in all_tags if t[0]})
+    tag_list = sorted(set(DEFAULT_TAGS) | set(tag_list))
+
+    # --- Xử lý overlap cho event kéo dài và chồng nhau ---
+    events = []
+    for i, todo in enumerate(todos):
+        if not todo.start_time or not todo.end_time:
+            events.append({'todo': todo, 'column': 0, 'total_columns': 1})
+            continue
+        overlaps = []
+        for j, other in enumerate(todos):
+            if i == j or not other.start_time or not other.end_time:
+                continue
+            # Nếu thời gian giao nhau
+            if (other.start_time < todo.end_time and other.end_time > todo.start_time):
+                overlaps.append(j)
+        # Số thứ tự cột là số event bắt đầu trước event này và còn đang diễn ra
+        col = 0
+        for j in overlaps:
+            if todos[j].start_time < todo.start_time:
+                col += 1
+        # Tổng số cột là số event chồng nhau tối đa tại thời điểm này
+        total_columns = len(overlaps) + 1
+        events.append({'todo': todo, 'column': col, 'total_columns': total_columns})
+
     popup = request.args.get('popup')
-    return render_template('day.html', todos=todos, today=selected_date, popup=popup)
+    return render_template('day.html', todos=todos, today=selected_date, popup=popup, events=events, todos_tomorrow=todos_tomorrow, tag_list=tag_list)
 
 @todo_bp.route('/add-event', methods=['GET', 'POST'])
 def add_event():
     if 'username' not in session:
         return redirect(url_for('auth.login'))
     user = User.query.filter_by(username=session['username']).first()
+    # Lấy danh sách tag duy nhất (từ DB và mặc định, loại trùng, loại rỗng)
+    all_tags = db.session.query(Todo.tag).filter(Todo.user_id==user.id, Todo.tag!=None, Todo.tag!='').distinct().all()
+    tag_list = list({t[0] for t in all_tags if t[0]})
+    tag_list = sorted(set(DEFAULT_TAGS) | set(tag_list))
     if request.method == 'POST':
         title = request.form.get('title')
         start_date = request.form.get('start_date')
@@ -42,11 +80,12 @@ def add_event():
         reminder = request.form.get('reminder')
         repeat = request.form.get('repeat')
         tag = request.form.get('tag')
-        location = request.form.get('location')
-        description = request.form.get('description')
+        # Không cho phép thêm tag mới bằng text nữa
+        if tag == '__new__':
+            tag = None
         # Validate required fields
         if not title or not start_date or not start_time:
-            return render_template('addevent.html', message='Vui lòng nhập đầy đủ thông tin bắt buộc!')
+            return render_template('addevent.html', message='Vui lòng nhập đầy đủ thông tin bắt buộc!', tag_list=tag_list)
         todo = Todo(
             task=title,
             user_id=user.id,
@@ -57,10 +96,83 @@ def add_event():
             reminder=reminder,
             repeat=repeat,
             tag=tag,
-            location=location,
-            description=description
+            location=request.form.get('location'),
+            description=request.form.get('description')
         )
         db.session.add(todo)
         db.session.commit()
         return redirect(url_for('todo.day_view', popup='1'))
-    return render_template('addevent.html')
+    return render_template('addevent.html', tag_list=tag_list)
+
+@todo_bp.route('/edit-event/<int:event_id>', methods=['GET', 'POST'])
+def edit_event(event_id):
+    if 'username' not in session:
+        return redirect(url_for('auth.login'))
+    user = User.query.filter_by(username=session['username']).first()
+    todo = Todo.query.filter_by(id=event_id, user_id=user.id).first()
+    if not todo:
+        return redirect(url_for('todo.day_view'))
+    # Lấy danh sách tag duy nhất (từ DB và mặc định, loại trùng, loại rỗng)
+    all_tags = db.session.query(Todo.tag).filter(Todo.user_id==user.id, Todo.tag!=None, Todo.tag!='').distinct().all()
+    tag_list = list({t[0] for t in all_tags if t[0]})
+    tag_list = sorted(set(DEFAULT_TAGS) | set(tag_list))
+    if request.method == 'POST':
+        todo.task = request.form.get('title')
+        todo.start_date = datetime.strptime(request.form.get('start_date'), '%Y-%m-%d').date() if request.form.get('start_date') else None
+        todo.end_date = datetime.strptime(request.form.get('end_date'), '%Y-%m-%d').date() if request.form.get('end_date') else None
+        # Xử lý lỗi khi input time có thể là 'HH:MM' hoặc 'HH:MM:SS'
+        def parse_time(val):
+            if not val:
+                return None
+            try:
+                return datetime.strptime(val, '%H:%M').time()
+            except ValueError:
+                return datetime.strptime(val, '%H:%M:%S').time()
+        todo.start_time = parse_time(request.form.get('start_time'))
+        todo.end_time = parse_time(request.form.get('end_time'))
+        todo.reminder = request.form.get('reminder')
+        todo.repeat = request.form.get('repeat')
+        todo.tag = request.form.get('tag')
+        todo.location = request.form.get('location')
+        todo.description = request.form.get('description')
+        db.session.commit()
+        return redirect(url_for('todo.day_view', popup='1'))
+    return render_template('edit_event.html', todo=todo, tag_list=tag_list)
+
+def get_week_days(selected_date):
+    # Trả về list 7 ngày (datetime.date) của tuần chứa selected_date, bắt đầu từ thứ 2
+    weekday = selected_date.weekday()  # 0=Mon
+    monday = selected_date - timedelta(days=weekday)
+    return [monday + timedelta(days=i) for i in range(7)]
+
+@todo_bp.route('/week')
+def week_view():
+    if 'username' not in session:
+        return redirect(url_for('auth.login'))
+    user = User.query.filter_by(username=session['username']).first()
+    # Lấy ngày hiện tại hoặc ngày được chọn từ query string
+    date_str = request.args.get('date')
+    if date_str:
+        try:
+            selected_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+        except Exception:
+            selected_date = date.today()
+    else:
+        selected_date = date.today()
+    # Xử lý chuyển tuần
+    week_offset = int(request.args.get('week_offset', 0))
+    selected_date = selected_date + timedelta(weeks=week_offset)
+    week_days = get_week_days(selected_date)
+    # Lấy event cho từng ngày trong tuần
+    events_by_day = {}
+    for d in week_days:
+        todos = Todo.query.filter_by(user_id=user.id, start_date=d).all()
+        # Không cần tính overlap/column cho giao diện tuần đơn giản
+        events_by_day[d] = todos
+    # Hiển thị dải ngày tuần
+    week_range = f"{week_days[0].strftime('%d/%m/%Y')} - {week_days[-1].strftime('%d/%m/%Y')}"
+    return render_template('week.html', week_days=week_days, events_by_day=events_by_day, week_range=week_range, selected_date=selected_date)
+
+@todo_bp.route('/month')
+def month_view():
+    return 'Tính năng lịch tháng đã bị tạm thời gỡ bỏ.'

@@ -91,6 +91,50 @@
 					</div>
 					<table id="calendar" style="width: 100%; margin-top: 10px; border-collapse: collapse; text-align: center;"></table>
 				</div>
+				<!-- Block Sự kiện trong ngày ngay bên dưới calendar -->
+				<div style="width: 100%; margin-top: 24px;">
+					<h3 style="margin-bottom: 12px; color: #0B41FF; font-size: 16px; text-align:center;">Sự kiện trong ngày</h3>
+					{% if todos %}
+						<ul style="list-style: none; padding: 0; margin: 0;">
+							{% for todo in todos|sort(attribute='start_time') %}
+								<li style="margin-bottom: 10px; padding: 10px 8px; background: #fff; border-radius: 6px; box-shadow: 0 1px 4px #0001; display: flex; flex-direction: column; align-items: flex-start; gap: 4px;">
+									<div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+										<span style="font-weight: bold; color: #0B41FF; font-size: 15px;">{{ todo.task }}</span>
+										<span style="color: #666; font-size: 13px; font-weight: bold;">{{ todo.start_time.strftime('%H:%M') if todo.start_time else '' }} - {{ todo.end_time.strftime('%H:%M') if todo.end_time else '' }}</span>
+										{% if todo.tag %}
+											<span style="color: #fff; background: #0B41FF; border-radius: 8px; font-size: 11px; padding: 2px 8px; margin-left: 8px;">#{{ todo.tag }}</span>
+										{% endif %}
+									</div>
+									<!-- Không hiển thị description ở cột trái -->
+								</li>
+							{% endfor %}
+						</ul>
+					{% else %}
+						<div style="color: #888; font-size: 14px; text-align:center;">Không có sự kiện nào trong ngày này.</div>
+					{% endif %}
+				</div>
+				<!-- Block Sự kiện ngày mai -->
+				<div style="width: 100%; margin-top: 18px;">
+					<h3 style="margin-bottom: 12px; color: #FF7A00; font-size: 16px; text-align:center;">Sự kiện ngày mai</h3>
+					{% if todos_tomorrow %}
+						<ul style="list-style: none; padding: 0; margin: 0;">
+							{% for todo in todos_tomorrow|sort(attribute='start_time') %}
+								<li style="margin-bottom: 10px; padding: 10px 8px; background: #fff; border-radius: 6px; box-shadow: 0 1px 4px #0001; display: flex; flex-direction: column; align-items: flex-start; gap: 4px;">
+									<div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+										<span style="font-weight: bold; color: #FF7A00; font-size: 15px;">{{ todo.task }}</span>
+										<span style="color: #666; font-size: 13px; font-weight: bold;">{{ todo.start_time.strftime('%H:%M') if todo.start_time else '' }} - {{ todo.end_time.strftime('%H:%M') if todo.end_time else '' }}</span>
+										{% if todo.tag %}
+											<span style="color: #fff; background: #FF7A00; border-radius: 8px; font-size: 11px; padding: 2px 8px; margin-left: 8px;">#{{ todo.tag }}</span>
+										{% endif %}
+									</div>
+									<!-- Không hiển thị description ở cột trái -->
+								</li>
+							{% endfor %}
+						</ul>
+					{% else %}
+						<div style="color: #888; font-size: 14px; text-align:center;">Không có sự kiện nào cho ngày mai.</div>
+					{% endif %}
+				</div>
 			</div>
 			<div style="flex: 1;">
 				<div style="align-self: stretch; display: flex; align-items: flex-start; background: #FFFFFF; border-bottom: 1px solid #DADCE099; padding: 6px 16px 16px 16px; margin-left: 1px; margin-right: 1px;">
@@ -99,9 +143,15 @@
 							01 January 2022
 						</span>
 						<button style="flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-start; background: none; border-radius: 3px; border: 1px solid #0B41FF; padding: 8px; text-align: left;"
-							onclick="alert('Pressed!')"}>
+							onclick="window.location.href='/week?date=' + encodeURIComponent(selectedDate)">
 							<span style="color: #0B41FF; font-size: 12px; font-weight: bold;" >
-								Day
+								Week
+							</span>
+						</button>
+						<button style="flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-start; background: none; border-radius: 3px; border: 1px solid #0B41FF; padding: 8px; text-align: left;"
+							onclick="window.location.href='/month?date=' + encodeURIComponent(selectedDate)">
+							<span style="color: #0B41FF; font-size: 12px; font-weight: bold;" >
+								Month
 							</span>
 						</button>
 					</div>
@@ -138,37 +188,69 @@
 					</div>
 				</div>
 				<div style="align-self: stretch; display: flex; align-items: flex-start; margin-left: 1px; margin-right: 1px;">
-					<div style="flex-shrink: 0; display: flex; flex-direction: column; align-items: center; width: 60px;">
-						<!-- Render 24 time slots -->
-						{% for hour in range(24) %}
-							<div style="height: 48px; display: flex; align-items: center; justify-content: center; border-bottom: 1px solid #eee; width: 100%;">
-								<span style="color: #333333; font-size: 12px; font-weight: bold;">{{ '%02d:00' % hour }}</span>
-							</div>
-						{% endfor %}
-					</div>
-					<div style="flex: 1;">
-					  {% for hour in range(24) %}
-					    <div style="height: 48px; box-sizing: border-box; align-self: stretch; background: #FFFFFF; border: 1px solid #61646A99; display: flex; align-items: flex-start; padding: 4px 8px; margin-bottom: 0; position: relative;">
-					      {% set time_str = '%02d:00' % hour %}
-					      {% for todo in todos %}
-					        {% if todo.start_time and todo.start_time.strftime('%H:00') == time_str %}
-					          <div style="display: flex; flex-direction: column; align-items: flex-start; background: #BDFFDB; border-radius: 3px; border: 1px solid #8EDBB2; padding: 4px 8px; margin-bottom: 2px; gap: 2px; min-width: 120px;">
-					            <div style="display: flex; justify-content: space-between; align-items: flex-start; width: 100%;">
-					              <span style="color: #2C5A41; font-size: 12px; font-weight: bold;">{{ todo.task }}</span>
-					              <span style="color: #2C5A41; font-size: 12px; font-weight: bold;">{{ todo.start_time.strftime('%H:%M') }}</span>
-					            </div>
-					            <span style="color: #2C5A41; font-size: 11px;">{{ todo.description }}</span>
-					          </div>
-					        {% endif %}
-					      {% endfor %}
-					    </div>
-					  {% endfor %}
-					</div>
-				</div>
-			</div>
-		</div>
-	</div>
-	<script>
+  <div style="flex-shrink: 0; display: flex; flex-direction: column; align-items: center; width: 60px;">
+    {% for hour in range(24) %}
+      <div style="height: 48px; display: flex; align-items: center; justify-content: center; border-bottom: 1px solid #eee; width: 100%; box-sizing: border-box;">
+        <span style="color: #333333; font-size: 12px; font-weight: bold;">{{ '%02d:00' % hour }}</span>
+      </div>
+    {% endfor %}
+  </div>
+  <!-- Cột nội dung bên phải: event kéo dài và xếp chồng -->
+  <div style="flex: 1; position: relative; min-height: 1152px; background: #fff; border-radius: 6px; overflow: visible;">
+    <!-- Render các ô giờ làm nền -->
+    {% for hour in range(24) %}
+      <div style="position: absolute; left: 0; right: 0; top: {{ hour*48 }}px; height: 48px; border-bottom: 1px solid #eee; pointer-events: none;"></div>
+    {% endfor %}
+    <!-- Render event dạng block kéo dài -->
+    {% for event in events %}
+      {% set start_minutes = event.todo.start_time.hour * 60 + event.todo.start_time.minute %}
+      {% set end_minutes = event.todo.end_time.hour * 60 + event.todo.end_time.minute %}
+      {% set top = (start_minutes / 60) * 48 %}
+      {% set height = ((end_minutes - start_minutes) / 60) * 48 %}
+      {% set left = (event.column / event.total_columns) * 98 %}
+      {% set width = (1 / event.total_columns) * 98 - 4 %}
+      {% set tag_color = {
+        'work':   '#B2D7FF',
+        'study':  '#FFE6A7',
+        'personal': '#FFD6E0',
+        'meeting': '#D6FFD6',
+        'health': '#E0D6FF',
+        'family': '#FFF2B2',
+        'travel': '#B2FFF2',
+        'other':  '#F5F5F5'
+      }.get(event.todo.tag|lower, '#BDFFDB') %}
+      {% set tag_border = {
+        'work':   '#5CA8F7',
+        'study':  '#FFC14A',
+        'personal': '#FF7A9E',
+        'meeting': '#8EDBB2',
+        'health': '#A18CFF',
+        'family': '#FFD84A',
+        'travel': '#4ADBC1',
+        'other':  '#8EDBB2'
+      }.get(event.todo.tag|lower, '#8EDBB2') %}
+      <div class="event-block" 
+        style="position: absolute; top: {{ top }}px; left: {{ left }}%; width: {{ width }}%; height: {{ height }}px; background: {{ tag_color }}; border-radius: 4px; border: 1.5px solid {{ tag_border }}; box-shadow: 0 2px 8px #0001; padding: 6px 10px; cursor: pointer; overflow: hidden; z-index: 2;"
+        onclick="window.location.href='/edit-event/{{ event.todo.id }}'"
+        >
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; width: 100%;">
+          <span style="color: #2C5A41; font-size: 13px; font-weight: bold;">{{ event.todo.task }}</span>
+          <span style="color: #2C5A41; font-size: 12px; font-weight: bold;">{{ event.todo.start_time.strftime('%H:%M') }}-{{ event.todo.end_time.strftime('%H:%M') }}</span>
+        </div>
+        <span style="color: #2C5A41; font-size: 11px; white-space: pre-line;">{{ event.todo.description }}</span>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+<script>
+function showEventDetail(id) {
+  document.getElementById('event-popup-' + id).style.display = 'block';
+  document.body.style.overflow = 'hidden';
+}
+function closeEventPopup(id) {
+  document.getElementById('event-popup-' + id).style.display = 'none';
+  document.body.style.overflow = '';
+}
 	// Calendar logic
 	const calendar = document.getElementById('calendar');
 	const calendarMonth = document.getElementById('calendarMonth');

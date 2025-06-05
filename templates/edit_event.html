@@ -3,7 +3,7 @@
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>Add Event</title>
+	<title>Edit Event</title>
 	<style>
 		body {
 			font-family: system-ui;
@@ -74,45 +74,45 @@
 </head>
 <body>
 <div class="add-event-container">
-	<div class="add-event-title">Add New Event</div>
+	<div class="add-event-title">Edit Event</div>
 	<form method="post" action="">
 		<div class="form-row">
 			<label>Event Title
-				<input type="text" name="title" placeholder="Event name" required />
+				<input type="text" name="title" placeholder="Event name" required value="{{ todo.task }}" />
 			</label>
 		</div>
 		<div class="form-row">
 			<label>Start Date
-				<input type="date" name="start_date" required />
+				<input type="date" name="start_date" required value="{{ todo.start_date }}" />
 			</label>
 			<label>End Date
-				<input type="date" name="end_date" required />
+				<input type="date" name="end_date" required value="{{ todo.end_date }}" />
 			</label>
 		</div>
 		<div class="form-row">
 			<label>Start Time
-				<input type="time" name="start_time" required />
+				<input type="time" name="start_time" required value="{{ todo.start_time }}" />
 			</label>
 			<label>End Time
-				<input type="time" name="end_time" required />
+				<input type="time" name="end_time" required value="{{ todo.end_time }}" />
 			</label>
 		</div>
 		<div class="form-row">
 			<label>Reminder
 				<select name="reminder">
-					<option value="none">None</option>
-					<option value="5">5 minutes before</option>
-					<option value="10">10 minutes before</option>
-					<option value="30">30 minutes before</option>
-					<option value="60">1 hour before</option>
+					<option value="none" {% if todo.reminder=='none' %}selected{% endif %}>None</option>
+					<option value="5" {% if todo.reminder=='5' %}selected{% endif %}>5 minutes before</option>
+					<option value="10" {% if todo.reminder=='10' %}selected{% endif %}>10 minutes before</option>
+					<option value="30" {% if todo.reminder=='30' %}selected{% endif %}>30 minutes before</option>
+					<option value="60" {% if todo.reminder=='60' %}selected{% endif %}>1 hour before</option>
 				</select>
 			</label>
 			<label>Repeat
 				<select name="repeat">
-					<option value="none">None</option>
-					<option value="daily">Daily</option>
-					<option value="weekly">Weekly</option>
-					<option value="monthly">Monthly</option>
+					<option value="none" {% if todo.repeat=='none' %}selected{% endif %}>None</option>
+					<option value="daily" {% if todo.repeat=='daily' %}selected{% endif %}>Daily</option>
+					<option value="weekly" {% if todo.repeat=='weekly' %}selected{% endif %}>Weekly</option>
+					<option value="monthly" {% if todo.repeat=='monthly' %}selected{% endif %}>Monthly</option>
 				</select>
 			</label>
 		</div>
@@ -121,17 +121,17 @@
 				<select name="tag" style="width:100%;padding:10px;border-radius:8px;border:1px solid #ccc;">
 					<option value="">-- Select tag --</option>
 					{% for tag in tag_list %}
-						<option value="{{ tag }}">{{ tag }}</option>
+						<option value="{{ tag }}" {% if todo.tag==tag %}selected{% endif %}>{{ tag }}</option>
 					{% endfor %}
 				</select>
 			</label>
 			<label>Location
-				<input type="text" name="location" placeholder="Location (optional)" />
+				<input type="text" name="location" placeholder="Location (optional)" value="{{ todo.location }}" />
 			</label>
 		</div>
 		<div class="form-row">
 			<label>Description
-				<textarea name="description" placeholder="Description (optional)"></textarea>
+				<textarea name="description" placeholder="Description (optional)">{{ todo.description }}</textarea>
 			</label>
 		</div>
 		<div class="add-event-actions">
