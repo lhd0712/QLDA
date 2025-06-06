@@ -37,27 +37,33 @@ def day_view():
     tag_list = list({t[0] for t in all_tags if t[0]})
     tag_list = sorted(set(DEFAULT_TAGS) | set(tag_list))
 
-    # --- Xử lý overlap cho event kéo dài và chồng nhau ---
+    # --- Xử lý overlap chuẩn: interval partitioning (kiểm tra với tất cả event trong cột) ---
+    # Sắp xếp theo start_time
+    todos_sorted = sorted(todos, key=lambda t: (t.start_time or datetime.min, t.end_time or datetime.max))
+    columns = []  # Mỗi phần tử là list các event trong 1 cột
+    event_columns = {}
+    for todo in todos_sorted:
+        placed = False
+        for col_idx, col in enumerate(columns):
+            # Kiểm tra với tất cả event trong cột, không overlap với bất kỳ event nào trong cột
+            if all(
+                (not e.start_time or not e.end_time or not todo.start_time or not todo.end_time) or
+                (e.end_time <= todo.start_time or todo.end_time <= e.start_time)
+                for e in col
+            ):
+                col.append(todo)
+                event_columns[todo] = col_idx
+                placed = True
+                break
+        if not placed:
+            columns.append([todo])
+            event_columns[todo] = len(columns) - 1
+    total_columns = len(columns) if columns else 1
+    # Sắp xếp event theo column (event bắt đầu trước ở cột nhỏ hơn, trái sang phải, và theo start_time trong mỗi cột)
     events = []
-    for i, todo in enumerate(todos):
-        if not todo.start_time or not todo.end_time:
-            events.append({'todo': todo, 'column': 0, 'total_columns': 1})
-            continue
-        overlaps = []
-        for j, other in enumerate(todos):
-            if i == j or not other.start_time or not other.end_time:
-                continue
-            # Nếu thời gian giao nhau
-            if (other.start_time < todo.end_time and other.end_time > todo.start_time):
-                overlaps.append(j)
-        # Số thứ tự cột là số event bắt đầu trước event này và còn đang diễn ra
-        col = 0
-        for j in overlaps:
-            if todos[j].start_time < todo.start_time:
-                col += 1
-        # Tổng số cột là số event chồng nhau tối đa tại thời điểm này
-        total_columns = len(overlaps) + 1
-        events.append({'todo': todo, 'column': col, 'total_columns': total_columns})
+    for col_idx, col in enumerate(columns):
+        for todo in sorted(col, key=lambda t: (t.start_time or datetime.min, t.end_time or datetime.max)):
+            events.append({'todo': todo, 'column': col_idx, 'total_columns': total_columns})
 
     popup = request.args.get('popup')
     return render_template('day.html', todos=todos, today=selected_date, popup=popup, events=events, todos_tomorrow=todos_tomorrow, tag_list=tag_list)
@@ -165,6 +171,7 @@ def week_view():
     week_days = get_week_days(selected_date)
     # Lấy event cho từng ngày trong tuần, kết hợp date + time thành datetime
     events_by_day = {}
+    events_in_week = []  # Thêm dòng này để gom tất cả event trong tuần
     for d in week_days:
         todos = Todo.query.filter_by(user_id=user.id, start_date=d).all()
         # Kết hợp date + time thành datetime cho từng event
@@ -173,25 +180,45 @@ def week_view():
                 todo.start_time = datetime.combine(d, todo.start_time)
             if todo.end_time:
                 todo.end_time = datetime.combine(d, todo.end_time)
-        # --- Xử lý overlap cho event kéo dài và chồng nhau (giống day_view) ---
+        # Gom tất cả event trong tuần vào 1 list để render sidebar
+        events_in_week.extend(todos)
+        # --- Xử lý overlap chuẩn: interval partitioning (kiểm tra với tất cả event trong cột) ---
+        todos_sorted = sorted(todos, key=lambda t: (t.start_time or datetime.min, t.end_time or datetime.max))
+        columns = []  # Mỗi phần tử là list các event trong 1 cột
+        event_columns = {}
+        for todo in todos_sorted:
+            placed = False
+            for col_idx, col in enumerate(columns):
+                # Kiểm tra với tất cả event trong cột, không overlap với bất kỳ event nào trong cột
+                if all(
+                    (not e.start_time or not e.end_time or not todo.start_time or not todo.end_time) or
+                    (e.end_time <= todo.start_time or todo.end_time <= e.start_time)
+                    for e in col
+                ):
+                    col.append(todo)
+                    event_columns[todo] = col_idx
+                    placed = True
+                    break
+            if not placed:
+                columns.append([todo])
+                event_columns[todo] = len(columns) - 1
+        total_columns = len(columns) if columns else 1
         events = []
-        for i, todo in enumerate(todos):
-            if not todo.start_time or not todo.end_time:
-                events.append({'todo': todo, 'column': 0, 'total_columns': 1})
-                continue
-            overlaps = []
-            for j, other in enumerate(todos):
-                if i == j or not other.start_time or not other.end_time:
-                    continue
-                if (other.start_time < todo.end_time and other.end_time > todo.start_time):
-                    overlaps.append(j)
-            col = 0
-            for j in overlaps:
-                if todos[j].start_time < todo.start_time:
-                    col += 1
-            total_columns = len(overlaps) + 1
-            events.append({'todo': todo, 'column': col, 'total_columns': total_columns})
+        for col_idx, col in enumerate(columns):
+            for todo in sorted(col, key=lambda t: (t.start_time or datetime.min, t.end_time or datetime.max)):
+                events.append({'todo': todo, 'column': col_idx, 'total_columns': total_columns})
         events_by_day[d.isoformat()] = events
     week_range = f"{week_days[0].strftime('%d/%m/%Y')} - {week_days[-1].strftime('%d/%m/%Y')}"
-    return render_template('week.html', week_days=week_days, events_by_day=events_by_day, week_range=week_range, selected_date=selected_date)
+    return render_template('week.html', week_days=week_days, events_by_day=events_by_day, week_range=week_range, selected_date=selected_date, events_in_week=events_in_week)
+
+@todo_bp.route('/delete-event/<int:event_id>', methods=['POST'])
+def delete_event(event_id):
+    if 'username' not in session:
+        return redirect(url_for('auth.login'))
+    user = User.query.filter_by(username=session['username']).first()
+    todo = Todo.query.filter_by(id=event_id, user_id=user.id).first()
+    if todo:
+        db.session.delete(todo)
+        db.session.commit()
+    return redirect(url_for('todo.day_view'))
 

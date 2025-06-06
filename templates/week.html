@@ -272,23 +272,29 @@
             </div>
             <div class="event-list-week">
                 <h3>Sự kiện trong tuần</h3>
-                {% if events_in_week %}
-                <ul>
-                    {% for event in events_in_week|sort(attribute='start_time') %}
-                    <li>
-                        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-                            <span class="event-title">{{ event.task }}</span>
-                            <span class="event-time">{{ event.start_time.strftime('%a %H:%M') if event.start_time else '' }} - {{ event.end_time.strftime('%a %H:%M') if event.end_time else '' }}</span>
-                            {% if event.tag %}
-                            <span class="event-tag">#{{ event.tag }}</span>
-                            {% endif %}
-                        </div>
-                    </li>
-                    {% endfor %}
-                </ul>
-                {% else %}
-                <div style="color: #888; font-size: 14px; text-align:center;">Không có sự kiện nào trong tuần này.</div>
-                {% endif %}
+                {% for day in week_days %}
+                {% set day_events = events_by_day[day.isoformat()] %}
+                <div style="margin-bottom: 10px;">
+                    <div style="color: #0B41FF; font-size: 15px; font-weight: bold; margin-bottom: 4px; text-align:left;">{{ day.strftime('%A, %d/%m') }}</div>
+                    {% if day_events %}
+                    <ul>
+                        {% for event in day_events|sort(attribute='todo.start_time') %}
+                        <li>
+                            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                                <span class="event-title">{{ event.todo.task }}</span>
+                                <span class="event-time">{{ event.todo.start_time.strftime('%H:%M') if event.todo.start_time else '' }} - {{ event.todo.end_time.strftime('%H:%M') if event.todo.end_time else '' }}</span>
+                                {% if event.todo.tag %}
+                                <span class="event-tag">#{{ event.todo.tag }}</span>
+                                {% endif %}
+                            </div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <div style="color: #888; font-size: 14px; text-align:left;">Không có sự kiện.</div>
+                    {% endif %}
+                </div>
+                {% endfor %}
             </div>
         </div>
         <div class="week-main-content">
@@ -353,13 +359,12 @@
                                 'other':  '#DADCE0'
                             }.get(event.todo.tag|lower, '#8EDBB2') %}
                             <div class="event-block" 
-                                style="position: absolute; top: {{ top }}px; left: {{ left }}%; width: {{ width }}%; height: {{ height }}px; background: {{ tag_color }}; border-radius: 4px; border: 1.5px solid {{ tag_border }}; box-shadow: 0 2px 8px #0001; padding: 6px 10px; cursor: pointer; overflow: hidden; z-index: {{ event.column + 1 }}; margin: 2px;"
+                                style="position: absolute; top: {{ top }}px; left: calc({{ left }}% + {{ event.column * 6 }}px); width: calc({{ width }}% - 8px); height: {{ height }}px; background: {{ tag_color }}; border-radius: 4px; border: 1.5px solid {{ tag_border }}; box-shadow: 0 2px 8px #0001; padding: 6px 10px; cursor: pointer; overflow: hidden; z-index: {{ 100 - event.column }}; margin: 2px; max-width: calc(100% - 8px);"
                                 onclick="window.location.href='/edit-event/{{ event.todo.id }}'">
-                                <div style="display: flex; justify-content: space-between; align-items: flex-start; width: 100%;">
-                                    <span class="event-title">{{ event.todo.task }}</span>
-                                    <span class="event-time">{{ event.todo.start_time.strftime('%H:%M') if event.todo.start_time else '' }}-{{ event.todo.end_time.strftime('%H:%M') if event.todo.end_time else '' }}</span>
+                                <div style="display: flex; flex-direction: column; align-items: flex-start; width: 100%; gap: 2px;">
+                                    <span class="event-title" style="color: #2C5A41; font-size: 13px; font-weight: bold; word-break: break-word; white-space: pre-line;">{{ event.todo.task }}</span>
+                                    <span class="event-time" style="color: #2C5A41; font-size: 12px; font-weight: bold; word-break: break-word; white-space: pre-line;">{{ event.todo.start_time.strftime('%H:%M') if event.todo.start_time else '' }}-{{ event.todo.end_time.strftime('%H:%M') if event.todo.end_time else '' }}</span>
                                 </div>
-                                <span class="event-desc">{{ event.todo.description }}</span>
                             </div>
                         {% endfor %}
                     </div>

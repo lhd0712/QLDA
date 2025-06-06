@@ -229,12 +229,12 @@
       }.get(event.todo.tag|lower, '#8EDBB2') %}
       <div class="event-block" 
         data-tag="{{ event.todo.tag|default('') }}"
-        style="position: absolute; top: {{ top }}px; left: {{ left }}%; width: {{ width }}%; height: {{ height }}px; background: {{ tag_color }}; border-radius: 4px; border: 1.5px solid {{ tag_border }}; box-shadow: 0 2px 8px #0001; padding: 6px 10px; cursor: pointer; overflow: hidden; z-index: {{ event.column + 1 }}; margin: 2px;"
+        style="position: absolute; top: {{ top }}px; left: calc({{ left }}% + {{ event.column * 6 }}px); width: calc({{ width }}% - 8px); height: {{ height }}px; background: {{ tag_color }}; border-radius: 4px; border: 1.5px solid {{ tag_border }}; box-shadow: 0 2px 8px #0001; padding: 6px 10px; cursor: pointer; overflow: hidden; z-index: {{ 100 - event.column }}; margin: 2px;"
         onclick="window.location.href='/edit-event/{{ event.todo.id }}'"
         >
-        <div style="display: flex; justify-content: space-between; align-items: flex-start; width: 100%;">
-          <span style="color: #2C5A41; font-size: 13px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ event.todo.task }}</span>
-          <span style="color: #2C5A41; font-size: 12px; font-weight: bold; white-space: nowrap; margin-left: 8px;">{{ event.todo.start_time.strftime('%H:%M') }}-{{ event.todo.end_time.strftime('%H:%M') }}</span>
+        <div style="display: flex; flex-direction: column; align-items: flex-start; width: 100%; gap: 2px;">
+          <span style="color: #2C5A41; font-size: 13px; font-weight: bold; word-break: break-word; white-space: pre-line;">{{ event.todo.task }}</span>
+          <span style="color: #2C5A41; font-size: 12px; font-weight: bold; word-break: break-word; white-space: pre-line;">{{ event.todo.start_time.strftime('%H:%M') }}-{{ event.todo.end_time.strftime('%H:%M') }}</span>
         </div>
         <span style="color: #2C5A41; font-size: 11px; white-space: pre-line; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ event.todo.description }}</span>
       </div>
