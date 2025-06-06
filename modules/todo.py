@@ -1,8 +1,10 @@
 from flask import Blueprint, render_template, request, session, redirect, url_for
 from modules.models import db, Todo, User
 from datetime import date, datetime, timedelta
+from datetime import date as dt_date
 import calendar
 import os
+from copy import copy
 
 todo_bp = Blueprint('todo', __name__)
 
@@ -27,26 +29,63 @@ def day_view():
             selected_date = date.today()
     else:
         selected_date = date.today()
-    # Lọc event theo ngày bắt đầu (start_date)
-    todos = Todo.query.filter_by(user_id=user.id, start_date=selected_date).all()
-    # Lấy event ngày mai
+    todos = Todo.query.filter_by(user_id=user.id).all()  # lấy tất cả để xử lý repeat
+    def is_event_on_date(todo, d):
+        if not todo.start_date:
+            return False
+        if todo.repeat == 'daily':
+            if todo.end_date and d > todo.end_date:
+                return False
+            return d >= todo.start_date
+        elif todo.repeat == 'weekly':
+            if todo.end_date and d > todo.end_date:
+                return False
+            days_diff = (d - todo.start_date).days
+            return d >= todo.start_date and days_diff % 7 == 0 and days_diff >= 0
+        elif todo.repeat == 'monthly':
+            if todo.end_date and d > todo.end_date:
+                return False
+            months_diff = (d.year - todo.start_date.year) * 12 + (d.month - todo.start_date.month)
+            return d >= todo.start_date and d.day == todo.start_date.day and months_diff >= 0
+        elif todo.repeat == 'yearly':
+            if todo.end_date and d > todo.end_date:
+                return False
+            years_diff = d.year - todo.start_date.year
+            return d >= todo.start_date and d.day == todo.start_date.day and d.month == todo.start_date.month and years_diff >= 0
+        else:
+            return todo.start_date == d
+    # Lọc event cho ngày được chọn (clone object để không ghi đè start_time/end_time)
+    todos_today = []
+    for todo in todos:
+        if is_event_on_date(todo, selected_date):
+            t = copy(todo)
+            if t.start_time:
+                t.start_time = datetime.combine(selected_date, t.start_time)
+            if t.end_time:
+                t.end_time = datetime.combine(selected_date, t.end_time)
+            todos_today.append(t)
+    # Lấy event ngày mai (bao gồm lặp, clone object)
     tomorrow = selected_date + timedelta(days=1)
-    todos_tomorrow = Todo.query.filter_by(user_id=user.id, start_date=tomorrow).all()
-
+    todos_tomorrow = []
+    for todo in todos:
+        if is_event_on_date(todo, tomorrow):
+            t = copy(todo)
+            if t.start_time:
+                t.start_time = datetime.combine(tomorrow, t.start_time)
+            if t.end_time:
+                t.end_time = datetime.combine(tomorrow, t.end_time)
+            todos_tomorrow.append(t)
     # Lấy danh sách tag duy nhất (từ DB và mặc định, loại trùng, loại rỗng)
     all_tags = db.session.query(Todo.tag).filter(Todo.user_id==user.id, Todo.tag!=None, Todo.tag!='').distinct().all()
     tag_list = list({t[0] for t in all_tags if t[0]})
     tag_list = sorted(set(DEFAULT_TAGS) | set(tag_list))
-
     # --- Xử lý overlap chuẩn: interval partitioning (kiểm tra với tất cả event trong cột) ---
-    # Sắp xếp theo start_time
-    todos_sorted = sorted(todos, key=lambda t: (t.start_time or datetime.min, t.end_time or datetime.max))
+    todos_sorted = sorted(todos_today, key=lambda t: (t.start_time or datetime.min, t.end_time or datetime.max))
     columns = []  # Mỗi phần tử là list các event trong 1 cột
     event_columns = {}
     for todo in todos_sorted:
         placed = False
         for col_idx, col in enumerate(columns):
-            # Kiểm tra với tất cả event trong cột, không overlap với bất kỳ event nào trong cột
             if all(
                 (not e.start_time or not e.end_time or not todo.start_time or not todo.end_time) or
                 (e.end_time <= todo.start_time or todo.end_time <= e.start_time)
@@ -60,14 +99,13 @@ def day_view():
             columns.append([todo])
             event_columns[todo] = len(columns) - 1
     total_columns = len(columns) if columns else 1
-    # Sắp xếp event theo column (event bắt đầu trước ở cột nhỏ hơn, trái sang phải, và theo start_time trong mỗi cột)
     events = []
     for col_idx, col in enumerate(columns):
         for todo in sorted(col, key=lambda t: (t.start_time or datetime.min, t.end_time or datetime.max)):
             events.append({'todo': todo, 'column': col_idx, 'total_columns': total_columns})
 
     popup = request.args.get('popup')
-    return render_template('day.html', todos=todos, today=selected_date, popup=popup, events=events, todos_tomorrow=todos_tomorrow, tag_list=tag_list, user=user, os=os)
+    return render_template('day.html', todos=todos_today, today=selected_date, popup=popup, events=events, todos_tomorrow=todos_tomorrow, tag_list=tag_list, user=user, os=os)
 
 @todo_bp.route('/add-event', methods=['GET', 'POST'])
 def add_event():
@@ -170,27 +208,54 @@ def week_view():
     week_offset = int(request.args.get('week_offset', 0))
     selected_date = selected_date + timedelta(weeks=week_offset)
     week_days = get_week_days(selected_date)
-    # Lấy event cho từng ngày trong tuần, kết hợp date + time thành datetime
+    # Lấy tất cả event của user để xử lý repeat
+    todos = Todo.query.filter_by(user_id=user.id).all()
     events_by_day = {}
-    events_in_week = []  # Thêm dòng này để gom tất cả event trong tuần
+    events_in_week = []
+    def is_event_on_date(todo, d):
+        if not todo.start_date:
+            return False
+        if todo.repeat == 'daily':
+            if todo.end_date and d > todo.end_date:
+                return False
+            return d >= todo.start_date
+        elif todo.repeat == 'weekly':
+            if todo.end_date and d > todo.end_date:
+                return False
+            days_diff = (d - todo.start_date).days
+            return d >= todo.start_date and days_diff % 7 == 0 and days_diff >= 0
+        elif todo.repeat == 'monthly':
+            if todo.end_date and d > todo.end_date:
+                return False
+            months_diff = (d.year - todo.start_date.year) * 12 + (d.month - todo.start_date.month)
+            return d >= todo.start_date and d.day == todo.start_date.day and months_diff >= 0
+        elif todo.repeat == 'yearly':
+            if todo.end_date and d > todo.end_date:
+                return False
+            years_diff = d.year - todo.start_date.year
+            return d >= todo.start_date and d.day == todo.start_date.day and d.month == todo.start_date.month and years_diff >= 0
+        else:
+            return todo.start_date == d
     for d in week_days:
-        todos = Todo.query.filter_by(user_id=user.id, start_date=d).all()
-        # Kết hợp date + time thành datetime cho từng event
+        # Lấy event cho ngày d (bao gồm lặp)
+        todos_day = []
         for todo in todos:
-            if todo.start_time:
-                todo.start_time = datetime.combine(d, todo.start_time)
-            if todo.end_time:
-                todo.end_time = datetime.combine(d, todo.end_time)
-        # Gom tất cả event trong tuần vào 1 list để render sidebar
-        events_in_week.extend(todos)
+            if is_event_on_date(todo, d):
+                # Clone event để không ghi đè start_time/end_time gốc
+                t = copy(todo)
+                if t.start_time:
+                    t.start_time = datetime.combine(d, t.start_time)
+                if t.end_time:
+                    t.end_time = datetime.combine(d, t.end_time)
+                todos_day.append(t)
+        events_in_week.extend(todos_day)
         # --- Xử lý overlap chuẩn: interval partitioning (kiểm tra với tất cả event trong cột) ---
-        todos_sorted = sorted(todos, key=lambda t: (t.start_time or datetime.min, t.end_time or datetime.max))
-        columns = []  # Mỗi phần tử là list các event trong 1 cột
+        todos_sorted = sorted(todos_day, key=lambda t: (t.start_time or datetime.min, t.end_time or datetime.max))
+        columns = []
         event_columns = {}
         for todo in todos_sorted:
             placed = False
             for col_idx, col in enumerate(columns):
-                # Kiểm tra với tất cả event trong cột, không overlap với bất kỳ event nào trong cột
                 if all(
                     (not e.start_time or not e.end_time or not todo.start_time or not todo.end_time) or
                     (e.end_time <= todo.start_time or todo.end_time <= e.start_time)
@@ -222,4 +287,3 @@ def delete_event(event_id):
         db.session.delete(todo)
         db.session.commit()
     return redirect(url_for('todo.day_view'))
-
