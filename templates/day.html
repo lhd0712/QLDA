@@ -97,7 +97,7 @@
 					{% if todos %}
 						<ul style="list-style: none; padding: 0; margin: 0;">
 							{% for todo in todos|sort(attribute='start_time') %}
-								<li style="margin-bottom: 10px; padding: 10px 8px; background: #fff; border-radius: 6px; box-shadow: 0 1px 4px #0001; display: flex; flex-direction: column; align-items: flex-start; gap: 4px;">
+								<li data-event-title-today="{{ todo.task }}" style="margin-bottom: 10px; padding: 10px 8px; background: #fff; border-radius: 6px; box-shadow: 0 1px 4px #0001; display: flex; flex-direction: column; align-items: flex-start; gap: 4px;">
 									<div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
 										<span style="font-weight: bold; color: #0B41FF; font-size: 15px;">{{ todo.task }}</span>
 										<span style="color: #666; font-size: 13px; font-weight: bold;">{{ todo.start_time.strftime('%H:%M') if todo.start_time else '' }} - {{ todo.end_time.strftime('%H:%M') if todo.end_time else '' }}</span>
@@ -119,7 +119,7 @@
 					{% if todos_tomorrow %}
 						<ul style="list-style: none; padding: 0; margin: 0;">
 							{% for todo in todos_tomorrow|sort(attribute='start_time') %}
-								<li style="margin-bottom: 10px; padding: 10px 8px; background: #fff; border-radius: 6px; box-shadow: 0 1px 4px #0001; display: flex; flex-direction: column; align-items: flex-start; gap: 4px;">
+								<li data-event-title-tomorrow="{{ todo.task }}" style="margin-bottom: 10px; padding: 10px 8px; background: #fff; border-radius: 6px; box-shadow: 0 1px 4px #0001; display: flex; flex-direction: column; align-items: flex-start; gap: 4px;">
 									<div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
 										<span style="font-weight: bold; color: #FF7A00; font-size: 15px;">{{ todo.task }}</span>
 										<span style="color: #666; font-size: 13px; font-weight: bold;">{{ todo.start_time.strftime('%H:%M') if todo.start_time else '' }} - {{ todo.end_time.strftime('%H:%M') if todo.end_time else '' }}</span>
@@ -139,20 +139,16 @@
 			<div style="flex: 1;">
 				<div style="align-self: stretch; display: flex; align-items: flex-start; background: #FFFFFF; border-bottom: 1px solid #DADCE099; padding: 6px 16px 16px 16px; margin-left: 1px; margin-right: 1px;">
 					<div style="flex-shrink: 0; display: flex; align-items: center; margin-top: 10px;">
-						<span style="color: #333333; font-size: 30px; font-weight: bold; margin-right: 21px;" >
-							01 January 2022
+						<span style="color: #333333; font-size: 30px; font-weight: bold; margin-right: 21px;" id="dayTitle">
+							<!-- dynamic date here -->
 						</span>
-						<button style="flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-start; background: none; border-radius: 3px; border: 1px solid #0B41FF; padding: 8px; text-align: left;"
+						<button style="flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-start; background: none; border-radius: 3px; border: 1px solid #0B41FF; padding: 8px; text-align: left; margin-right:8px;"
 							onclick="window.location.href='/week?date=' + encodeURIComponent(selectedDate)">
-							<span style="color: #0B41FF; font-size: 12px; font-weight: bold;" >
-								Week
-							</span>
+							<span style="color: #0B41FF; font-size: 12px; font-weight: bold;">Week</span>
 						</button>
-						<button style="flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-start; background: none; border-radius: 3px; border: 1px solid #0B41FF; padding: 8px; text-align: left;"
-							onclick="window.location.href='/month?date=' + encodeURIComponent(selectedDate)">
-							<span style="color: #0B41FF; font-size: 12px; font-weight: bold;" >
-								Month
-							</span>
+						<button style="flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-start; background: none; border-radius: 3px; border: 1px solid #0B41FF; padding: 8px; text-align: left; margin-right:8px;"
+							onclick="goToCurrentDay()">
+							<span style="color: #0B41FF; font-size: 12px; font-weight: bold;">Hiện tại</span>
 						</button>
 					</div>
 					<div style="flex: 1; align-self: stretch;">
@@ -164,16 +160,18 @@
 						onclick="window.location.href='/profile'"
 					/>
 					<div style="flex-shrink: 0; display: flex; align-items: center; margin-top: 14px; gap: 16px;">
-						<div style="flex-shrink: 0; display: flex; align-items: center; background: #F5F5F5; border-radius: 99px; padding: 8px 8px 8px 16px;">
+						<div style="flex-shrink: 0; display: flex; align-items: center; background: #F5F5F5; border-radius: 99px; padding: 8px 8px 8px 16px; position:relative;">
 							<input
 								type="text"
 								placeholder="Enter Search"
-								style="color: #6A778B; font-size: 14px; font-weight: bold; width: 161px; background: none; border: none;"
+								id="eventSearchInput"
+								style="color: #6A778B; font-size: 14px; font-weight: bold; width: 161px; background: none; border: none; z-index:2;"
 							/>
 							<img
 								src="https://figma-alpha-api.s3.us-west-2.amazonaws.com/images/5c0f54db-ffe1-4c35-b9e2-893e888c3290" 
-								style="border-radius: 99px; width: 16px; height: 16px; object-fit: fill;"
+								style="border-radius: 99px; width: 16px; height: 16px; object-fit: fill; z-index:2;"
 							/>
+							<div id="search-suggestion-box" style="display:none; position:absolute; left:0; right:0; top:38px; z-index:100; background:#fff; border-radius:8px; box-shadow:0 2px 8px #0002; padding:8px 0; max-height:220px; overflow-y:auto;"></div>
 						</div>
 						<button style="flex-shrink: 0; display: flex; align-items: center; background: #0B41FF; border-radius: 3px; border: none; padding: 8px; gap: 4px; text-align: left;"
 							onclick="window.location.href='/add-event'">
@@ -207,8 +205,8 @@
       {% set end_minutes = event.todo.end_time.hour * 60 + event.todo.end_time.minute %}
       {% set top = (start_minutes / 60) * 48 %}
       {% set height = ((end_minutes - start_minutes) / 60) * 48 %}
-      {% set left = (event.column / event.total_columns) * 98 %}
-      {% set width = (1 / event.total_columns) * 98 - 4 %}
+      {% set left = (event.column / event.total_columns) * 100 %}
+      {% set width = (1 / event.total_columns) * 100 - 2 %}
       {% set tag_color = {
         'work':   '#B2D7FF',
         'study':  '#FFE6A7',
@@ -230,119 +228,244 @@
         'other':  '#8EDBB2'
       }.get(event.todo.tag|lower, '#8EDBB2') %}
       <div class="event-block" 
-        style="position: absolute; top: {{ top }}px; left: {{ left }}%; width: {{ width }}%; height: {{ height }}px; background: {{ tag_color }}; border-radius: 4px; border: 1.5px solid {{ tag_border }}; box-shadow: 0 2px 8px #0001; padding: 6px 10px; cursor: pointer; overflow: hidden; z-index: 2;"
+        data-tag="{{ event.todo.tag|default('') }}"
+        style="position: absolute; top: {{ top }}px; left: {{ left }}%; width: {{ width }}%; height: {{ height }}px; background: {{ tag_color }}; border-radius: 4px; border: 1.5px solid {{ tag_border }}; box-shadow: 0 2px 8px #0001; padding: 6px 10px; cursor: pointer; overflow: hidden; z-index: {{ event.column + 1 }}; margin: 2px;"
         onclick="window.location.href='/edit-event/{{ event.todo.id }}'"
         >
         <div style="display: flex; justify-content: space-between; align-items: flex-start; width: 100%;">
-          <span style="color: #2C5A41; font-size: 13px; font-weight: bold;">{{ event.todo.task }}</span>
-          <span style="color: #2C5A41; font-size: 12px; font-weight: bold;">{{ event.todo.start_time.strftime('%H:%M') }}-{{ event.todo.end_time.strftime('%H:%M') }}</span>
+          <span style="color: #2C5A41; font-size: 13px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ event.todo.task }}</span>
+          <span style="color: #2C5A41; font-size: 12px; font-weight: bold; white-space: nowrap; margin-left: 8px;">{{ event.todo.start_time.strftime('%H:%M') }}-{{ event.todo.end_time.strftime('%H:%M') }}</span>
         </div>
-        <span style="color: #2C5A41; font-size: 11px; white-space: pre-line;">{{ event.todo.description }}</span>
+        <span style="color: #2C5A41; font-size: 11px; white-space: pre-line; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ event.todo.description }}</span>
       </div>
     {% endfor %}
   </div>
 </div>
 <script>
-function showEventDetail(id) {
-  document.getElementById('event-popup-' + id).style.display = 'block';
-  document.body.style.overflow = 'hidden';
+// Debounce function to optimize performance
+function debounce(func, wait) {
+	let timeout;
+	return function executedFunction(...args) {
+		const later = () => {
+			clearTimeout(timeout);
+			func(...args);
+		};
+		clearTimeout(timeout);
+		timeout = setTimeout(later, wait);
+	};
 }
-function closeEventPopup(id) {
-  document.getElementById('event-popup-' + id).style.display = 'none';
-  document.body.style.overflow = '';
+// Normalize text for search
+function normalizeText(str) {
+	return (str || '').toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '');
 }
-	// Calendar logic
-	const calendar = document.getElementById('calendar');
-	const calendarMonth = document.getElementById('calendarMonth');
-	const prevMonthBtn = document.getElementById('prevMonth');
-	const nextMonthBtn = document.getElementById('nextMonth');
-
-	let today = new Date();
-	let currentMonth = today.getMonth();
-	let currentYear = today.getFullYear();
-
-	function renderCalendar(month, year, selectedDateStr = null) {
-		const monthNames = [
-			'January', 'February', 'March', 'April', 'May', 'June',
-			'July', 'August', 'September', 'October', 'November', 'December'
-		];
-		calendarMonth.textContent = monthNames[month] + ' ' + year;
-		const firstDay = new Date(year, month, 1).getDay();
-		const daysInMonth = new Date(year, month + 1, 0).getDate();
-		let html = '<tr>';
-		const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-		for (let d of days) html += `<th style=\"color:#888;font-size:12px;\">${d}</th>`;
-		html += '</tr><tr>';
-		for (let i = 0; i < firstDay; i++) html += '<td></td>';
-		for (let date = 1; date <= daysInMonth; date++) {
-			if ((firstDay + date - 1) % 7 === 0 && date !== 1) html += '</tr><tr>';
-			const isToday = date === today.getDate() && month === today.getMonth() && year === today.getFullYear();
-			const thisDateStr = `${year}-${month+1}-${date}`;
-			const isSelected = selectedDateStr === thisDateStr;
-			// Ưu tiên selected, nếu đã chọn thì không bôi màu today nữa
-			const isHighlight = isSelected ? 'selected' : '';
-			const bgColor = isSelected ? '#0B41FF' : (isToday ? '#F5F5F5' : '#F5F5F5');
-			const color = isSelected ? '#fff' : '#333';
-			html += `<td class="${isHighlight}" style=\"padding:4px;\"><button class=\"calendar-day\" data-date=\"${thisDateStr}\" style=\"width:28px;height:28px;border-radius:50%;border:none;background:${bgColor};color:${color};font-weight:bold;cursor:pointer;\">${date}</button></td>`;
+// Filter events based on search input (chỉ focus event-block trên bảng lịch, search theo tag)
+const filterEvents = debounce(function() {
+	const keyword = normalizeText(document.getElementById('eventSearchInput').value.trim());
+	const suggestionBox = document.getElementById('search-suggestion-box');
+	let matches = [];
+	document.querySelectorAll('.event-block').forEach((item, idx) => {
+		const title = normalizeText(item.querySelector('span').textContent);
+		const tag = normalizeText(item.getAttribute('data-tag') || '');
+		const timeSpan = item.querySelector('span[style*="font-size: 12px"]');
+		const time = timeSpan ? timeSpan.textContent.trim() : '';
+		if (keyword && (title.includes(keyword) || tag.includes(keyword))) {
+			matches.push({
+				title: item.querySelector('span').textContent,
+				time: time,
+				tag: tag,
+				element: item
+			});
 		}
-		const lastDay = (firstDay + daysInMonth - 1) % 7;
-		for (let i = lastDay + 1; i < 7 && lastDay !== 6; i++) html += '<td></td>';
-		html += '</tr>';
-		calendar.innerHTML = html;
-		document.querySelectorAll('.calendar-day').forEach(btn => {
-			btn.onclick = function() {
-				const dateStr = this.getAttribute('data-date');
-				// Chuyển hướng sang backend để lấy event đúng ngày
-				window.location.href = '/day?date=' + dateStr;
+	});
+	// Sort matches by time
+	matches.sort((a, b) => {
+		const timeA = a.time ? a.time.split('-')[0].trim() : '23:59';
+		const timeB = b.time ? b.time.split('-')[0].trim() : '23:59';
+		return timeA.localeCompare(timeB);
+	});
+	// Display suggestions
+	if (keyword && matches.length > 0) {
+		let html = matches.slice(0, 10).map((match, idx) => `
+			<div class="search-suggestion-item" data-idx="${idx}" style="padding:6px 18px; cursor:pointer; font-size:15px; color:#0B41FF; border-bottom:1px solid #F0F0F0; display:flex; justify-content:space-between; align-items:center;" tabindex="0">
+				<span>${match.title} ${match.tag ? `<span style=\"color:#666;font-size:13px;margin-left:8px;\">#${match.tag}</span>` : ''}</span>
+				${match.time ? `<span style=\"color:#666;font-size:13px;margin-left:12px;\">${match.time}</span>` : ''}
+			</div>
+		`).join('');
+		suggestionBox.innerHTML = html;
+		suggestionBox.style.display = '';
+		Array.from(suggestionBox.children).forEach((child, idx) => {
+			child.onclick = () => selectSuggestion(idx);
+			child.onkeydown = e => {
+				if (e.key === 'Enter') selectSuggestion(idx);
 			};
 		});
+		highlightSuggestion(-1);
+	} else if (keyword) {
+		suggestionBox.innerHTML = `<div style=\"padding:6px 18px; font-size:15px; color:#666;\">Không tìm thấy sự kiện nào</div>`;
+		suggestionBox.style.display = '';
+	} else {
+		suggestionBox.style.display = 'none';
 	}
-
-	let selectedDate = null;
-
-	// Lấy ngày hiện tại làm ngày chọn mặc định khi load trang
-	window.onload = function() {
-		// Lấy ngày từ query string nếu có
-		const params = new URLSearchParams(window.location.search);
-		let dateStr = params.get('date');
-		let defaultDate;
-		if (dateStr) {
-			// Định dạng YYYY-MM-DD
-			const [y, m, d] = dateStr.split('-').map(Number);
-			defaultDate = new Date(y, m - 1, d);
-			selectedDate = dateStr;
-		} else {
-			defaultDate = new Date(currentYear, currentMonth, today.getDate());
-			selectedDate = `${defaultDate.getFullYear()}-${defaultDate.getMonth()+1}-${defaultDate.getDate()}`;
+}, 300);
+// Select a suggestion (focus event-block trên bảng lịch)
+function selectSuggestion(idx) {
+	const suggestionBox = document.getElementById('search-suggestion-box');
+	const keyword = normalizeText(document.getElementById('eventSearchInput').value.trim());
+	let matches = [];
+	document.querySelectorAll('.event-block').forEach((item) => {
+		const title = normalizeText(item.querySelector('span').textContent);
+		const tag = normalizeText(item.getAttribute('data-tag') || '');
+		if (keyword && (title.includes(keyword) || tag.includes(keyword))) {
+			matches.push(item);
 		}
-		renderCalendar(defaultDate.getMonth(), defaultDate.getFullYear(), selectedDate);
-		// Cập nhật ngày lớn
-		const day = String(defaultDate.getDate()).padStart(2, '0');
-		const monthName = defaultDate.toLocaleString('default', { month: 'long' });
-		document.querySelectorAll('span[style*="font-size: 30px"]')[0].textContent = `${day} ${monthName} ${defaultDate.getFullYear()}`;
-		// Cập nhật lại currentMonth/currentYear để điều hướng tháng đúng
-		currentMonth = defaultDate.getMonth();
-		currentYear = defaultDate.getFullYear();
-	};
-
-	prevMonthBtn.onclick = function() {
-		currentMonth--;
-		if (currentMonth < 0) {
-			currentMonth = 11;
-			currentYear--;
+	});
+	if (matches[idx]) {
+		const el = matches[idx];
+		el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+		el.classList.add('search-highlight');
+		setTimeout(() => el.classList.remove('search-highlight'), 1200);
+		suggestionBox.style.display = 'none';
+		document.getElementById('eventSearchInput').blur();
+	}
+}
+// Highlight suggestion
+let currentSuggestion = -1;
+function highlightSuggestion(idx) {
+	const suggestionBox = document.getElementById('search-suggestion-box');
+	Array.from(suggestionBox.children).forEach((child, i) => {
+		child.style.background = i === idx ? '#e6f0ff' : '';
+	});
+	currentSuggestion = idx;
+}
+// Calendar logic
+const calendar = document.getElementById('calendar');
+const calendarMonth = document.getElementById('calendarMonth');
+const prevMonthBtn = document.getElementById('prevMonth');
+const nextMonthBtn = document.getElementById('nextMonth');
+let today = new Date();
+let currentMonth = today.getMonth();
+let currentYear = today.getFullYear();
+let selectedDate = null;
+function renderCalendar(month, year, selectedDateStr = null) {
+	const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+	calendarMonth.textContent = monthNames[month] + ' ' + year;
+	const firstDay = new Date(year, month, 1);
+	const lastDay = new Date(year, month + 1, 0);
+	let html = '';
+	html += '<thead><tr>';
+	const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+	for (let d of days) html += `<th style="color:#888;font-size:12px;">${d}</th>`;
+	html += '</tr></thead><tbody>';
+	let startDay = (firstDay.getDay() + 6) % 7;
+	let day = 1;
+	for (let i = 0; i < 6; i++) {
+		html += '<tr>';
+		for (let j = 0; j < 7; j++) {
+			if (i === 0 && j < startDay) {
+				html += '<td></td>';
+			} else if (day > lastDay.getDate()) {
+				html += '<td></td>';
+			} else {
+				const dateObj = new Date(year, month, day);
+				const thisDateStr = `${year}-${month+1}-${day}`;
+				const isSelected = selectedDateStr === thisDateStr;
+				const isToday = dateObj.getDate() === today.getDate() && dateObj.getMonth() === today.getMonth() && dateObj.getFullYear() === today.getFullYear();
+				const isHighlight = isSelected ? 'selected' : '';
+				const bgColor = isSelected ? '#0B41FF' : (isToday ? '#F5F5F5' : '#F5F5F5');
+				const color = isSelected ? '#fff' : '#333';
+				html += `<td class="${isHighlight}" style="padding:4px;"><button class="calendar-day" data-date="${thisDateStr}" style="width:28px;height:28px;border-radius:50%;border:none;background:${bgColor};color:${color};font-weight:bold;cursor:pointer;">${day}</button></td>`;
+				day++;
+			}
 		}
-		renderCalendar(currentMonth, currentYear, selectedDate);
-	};
-	nextMonthBtn.onclick = function() {
-		currentMonth++;
-		if (currentMonth > 11) {
-			currentMonth = 0;
-			currentYear++;
+		html += '</tr>';
+		if (day > lastDay.getDate()) break;
+	}
+	html += '</tbody>';
+	calendar.innerHTML = html;
+	document.querySelectorAll('.calendar-day').forEach(btn => {
+		btn.onclick = function() {
+			const dateStr = this.getAttribute('data-date');
+			window.location.href = '/day?date=' + dateStr;
+		};
+	});
+}
+window.onload = function() {
+	const params = new URLSearchParams(window.location.search);
+	let dateStr = params.get('date');
+	let defaultDate;
+	if (dateStr) {
+		const [y, m, d] = dateStr.split('-').map(Number);
+		defaultDate = new Date(y, m - 1, d);
+		selectedDate = dateStr;
+	} else {
+		defaultDate = new Date(currentYear, currentMonth, today.getDate());
+		selectedDate = `${defaultDate.getFullYear()}-${defaultDate.getMonth()+1}-${defaultDate.getDate()}`;
+	}
+	renderCalendar(defaultDate.getMonth(), defaultDate.getFullYear(), selectedDate);
+	const day = String(defaultDate.getDate()).padStart(2, '0');
+	const monthName = defaultDate.toLocaleString('default', { month: 'long' });
+	document.querySelectorAll('span[style*="font-size: 30px"]')[0].textContent = `${day} ${monthName} ${defaultDate.getFullYear()}`;
+	currentMonth = defaultDate.getMonth();
+	currentYear = defaultDate.getFullYear();
+};
+prevMonthBtn.onclick = function() {
+	currentMonth--;
+	if (currentMonth < 0) {
+		currentMonth = 11;
+		currentYear--;
+	}
+	renderCalendar(currentMonth, currentYear, selectedDate);
+};
+nextMonthBtn.onclick = function() {
+	currentMonth++;
+	if (currentMonth > 11) {
+		currentMonth = 0;
+		currentYear++;
+	}
+	renderCalendar(currentMonth, currentYear, selectedDate);
+};
+// Search event listeners
+const searchInput = document.getElementById('eventSearchInput');
+const suggestionBox = document.getElementById('search-suggestion-box');
+searchInput.addEventListener('input', filterEvents);
+searchInput.addEventListener('focus', () => {
+	if (suggestionBox.innerHTML) suggestionBox.style.display = '';
+});
+searchInput.addEventListener('keydown', e => {
+	const items = Array.from(suggestionBox.children);
+	if (!items.length || suggestionBox.style.display === 'none') return;
+	if (e.key === 'ArrowDown') {
+		e.preventDefault();
+		let next = (currentSuggestion + 1) % items.length;
+		highlightSuggestion(next);
+		items[next].scrollIntoView({ block: 'nearest' });
+	} else if (e.key === 'ArrowUp') {
+		e.preventDefault();
+		let prev = (currentSuggestion - 1 + items.length) % items.length;
+		highlightSuggestion(prev);
+		items[prev].scrollIntoView({ block: 'nearest' });
+	} else if (e.key === 'Enter') {
+		if (currentSuggestion >= 0) {
+			selectSuggestion(currentSuggestion);
+			e.preventDefault();
 		}
-		renderCalendar(currentMonth, currentYear, selectedDate);
-	};
-
-	renderCalendar(currentMonth, currentYear);
+	} else if (e.key === 'Escape') {
+		suggestionBox.style.display = 'none';
+		currentSuggestion = -1;
+		searchInput.blur();
+	}
+});
+document.addEventListener('click', e => {
+	if (!searchInput.contains(e.target) && !suggestionBox.contains(e.target)) {
+		suggestionBox.style.display = 'none';
+		currentSuggestion = -1;
+	}
+});
+function goToCurrentDay() {
+    const today = new Date();
+    const dateStr = `${today.getFullYear()}-${today.getMonth()+1}-${today.getDate()}`;
+    window.location.href = '/day?date=' + dateStr;
+}
 	</script>
 </body>
 </html>

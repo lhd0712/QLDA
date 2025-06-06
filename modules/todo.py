@@ -163,16 +163,35 @@ def week_view():
     week_offset = int(request.args.get('week_offset', 0))
     selected_date = selected_date + timedelta(weeks=week_offset)
     week_days = get_week_days(selected_date)
-    # Lấy event cho từng ngày trong tuần
+    # Lấy event cho từng ngày trong tuần, kết hợp date + time thành datetime
     events_by_day = {}
     for d in week_days:
         todos = Todo.query.filter_by(user_id=user.id, start_date=d).all()
-        # Không cần tính overlap/column cho giao diện tuần đơn giản
-        events_by_day[d] = todos
-    # Hiển thị dải ngày tuần
+        # Kết hợp date + time thành datetime cho từng event
+        for todo in todos:
+            if todo.start_time:
+                todo.start_time = datetime.combine(d, todo.start_time)
+            if todo.end_time:
+                todo.end_time = datetime.combine(d, todo.end_time)
+        # --- Xử lý overlap cho event kéo dài và chồng nhau (giống day_view) ---
+        events = []
+        for i, todo in enumerate(todos):
+            if not todo.start_time or not todo.end_time:
+                events.append({'todo': todo, 'column': 0, 'total_columns': 1})
+                continue
+            overlaps = []
+            for j, other in enumerate(todos):
+                if i == j or not other.start_time or not other.end_time:
+                    continue
+                if (other.start_time < todo.end_time and other.end_time > todo.start_time):
+                    overlaps.append(j)
+            col = 0
+            for j in overlaps:
+                if todos[j].start_time < todo.start_time:
+                    col += 1
+            total_columns = len(overlaps) + 1
+            events.append({'todo': todo, 'column': col, 'total_columns': total_columns})
+        events_by_day[d.isoformat()] = events
     week_range = f"{week_days[0].strftime('%d/%m/%Y')} - {week_days[-1].strftime('%d/%m/%Y')}"
     return render_template('week.html', week_days=week_days, events_by_day=events_by_day, week_range=week_range, selected_date=selected_date)
 
-@todo_bp.route('/month')
-def month_view():
-    return 'Tính năng lịch tháng đã bị tạm thời gỡ bỏ.'
