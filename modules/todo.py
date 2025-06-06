@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, request, session, redirect, url_fo
 from modules.models import db, Todo, User
 from datetime import date, datetime, timedelta
 import calendar
+import os
 
 todo_bp = Blueprint('todo', __name__)
 
@@ -66,7 +67,7 @@ def day_view():
             events.append({'todo': todo, 'column': col_idx, 'total_columns': total_columns})
 
     popup = request.args.get('popup')
-    return render_template('day.html', todos=todos, today=selected_date, popup=popup, events=events, todos_tomorrow=todos_tomorrow, tag_list=tag_list)
+    return render_template('day.html', todos=todos, today=selected_date, popup=popup, events=events, todos_tomorrow=todos_tomorrow, tag_list=tag_list, user=user, os=os)
 
 @todo_bp.route('/add-event', methods=['GET', 'POST'])
 def add_event():
@@ -209,7 +210,7 @@ def week_view():
                 events.append({'todo': todo, 'column': col_idx, 'total_columns': total_columns})
         events_by_day[d.isoformat()] = events
     week_range = f"{week_days[0].strftime('%d/%m/%Y')} - {week_days[-1].strftime('%d/%m/%Y')}"
-    return render_template('week.html', week_days=week_days, events_by_day=events_by_day, week_range=week_range, selected_date=selected_date, events_in_week=events_in_week)
+    return render_template('week.html', week_days=week_days, events_by_day=events_by_day, week_range=week_range, selected_date=selected_date, events_in_week=events_in_week, user=user, os=os)
 
 @todo_bp.route('/delete-event/<int:event_id>', methods=['POST'])
 def delete_event(event_id):

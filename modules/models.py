@@ -13,6 +13,7 @@ class User(db.Model):
     address = db.Column(db.String(255), nullable=True)
     gender = db.Column(db.String(16), nullable=True)
     email = db.Column(db.String(128), nullable=True)
+    avatar = db.Column(db.String(255), nullable=True)
 
 class Todo(db.Model):
     id = db.Column(db.Integer, primary_key=True)

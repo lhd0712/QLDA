@@ -81,7 +81,7 @@
             </table>
         </div>
 		<div style="background: #FFFFFF;">
-		<div style="align-self: stretch; display: flex; align-items: flex-start; background: #FFFFFF; border-radius: 6px; margin-top: 102px; margin-bottom: 1px; box-shadow: 0px 14px 21px #00000040;">
+		<div style="align-self: stretch; display: flex; align-items: flex-start; background: #FFFFFF; border-radius: 6px; margin-top: 30px; margin-bottom: 1px; box-shadow: 0px 14px 21px #00000040;">
 			<div style="flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-start; background: #FFFFFF; padding-bottom: 245px; min-width: 260px;">
 				<div id="calendar-container" style="width: 240px; padding: 16px;">
 					<div style="display: flex; justify-content: space-between; align-items: center;">
@@ -154,11 +154,12 @@
 					<div style="flex: 1; align-self: stretch;">
 					</div>
 					<img
-						src="https://figma-alpha-api.s3.us-west-2.amazonaws.com/images/5ecd1f77-01c7-4e8f-a2f7-f57f1c4180d0" 
-						style="width: 60px; height: 53px; margin-right: 19px; object-fit: fill; cursor: pointer; border-radius: 50%;"
-						alt="avatar"
-						onclick="window.location.href='/profile'"
-					/>
+    src="{% if user and user.avatar %}/static/avatar/{{ user.avatar }}{% elif user and (user.username|default('')) and (user.username+'.png') in (os.listdir('static/avatar') if os.path.exists('static/avatar') else []) %}/static/avatar/{{ user.username }}.png{% else %}https://via.placeholder.com/60{% endif %}"
+    class="avatar-img"
+    alt="avatar"
+    onclick="window.location.href='/profile'"
+    style="width: 48px; height: 48px; margin-right: 19px; object-fit: fill; cursor: pointer; border-radius: 50%;"
+/>
 					<div style="flex-shrink: 0; display: flex; align-items: center; margin-top: 14px; gap: 16px;">
 						<div style="flex-shrink: 0; display: flex; align-items: center; background: #F5F5F5; border-radius: 99px; padding: 8px 8px 8px 16px; position:relative;">
 							<input
