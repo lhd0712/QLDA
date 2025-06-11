@@ -223,3 +223,5 @@ function goToCurrentWeek() {
 	const dateStr = `${today.getFullYear()}-${today.getMonth()+1}-${today.getDate()}`;
 	window.location.href = '/week?date=' + dateStr;
 }
+window.SHOW_NOTIFICATION_DESCRIPTION = false;
+import('/static/js/notification.js');

@@ -222,3 +222,5 @@ function goToCurrentDay() {
     const dateStr = `${today.getFullYear()}-${today.getMonth()+1}-${today.getDate()}`;
     window.location.href = '/day?date=' + dateStr;
 }
+window.SHOW_NOTIFICATION_DESCRIPTION = true;
+import('/static/js/notification.js');

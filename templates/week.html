@@ -35,11 +35,7 @@
                                 <span class="event-tag">#{{ event.todo.tag }}</span>
                                 {% endif %}
                             </div>
-                            {% if event.todo.repeat and event.todo.repeat != 'none' %}
-                                <span style="color: #FF7A00; font-size: 11px; font-weight: bold; margin-left: 4px;">Lặp: 
-                                    {% if event.todo.repeat == 'daily' %}Hàng ngày{% elif event.todo.repeat == 'weekly' %}Hàng tuần{% elif event.todo.repeat == 'monthly' %}Hàng tháng{% elif event.todo.repeat == 'yearly' %}Hàng năm{% endif %}
-                                </span>
-                            {% endif %}
+                            {# Bỏ nhãn lặp ở sidebar #}
                         </li>
                         {% endfor %}
                     </ul>
@@ -66,6 +62,18 @@
                     alt="avatar"
                     onclick="window.location.href='/profile'"
                 />
+                <!-- Notification Icon -->
+                <div id="notification-bell" style="position:relative;display:inline-block;cursor:pointer;margin-right:18px;">
+                  <img src="https://cdn-icons-png.flaticon.com/512/1827/1827392.png" style="width:28px;height:28px;object-fit:contain;"/>
+                  <span id="notification-badge" style="position:absolute;top:-6px;right:-6px;background:#FF4D4F;color:#fff;font-size:12px;border-radius:50%;padding:2px 6px;min-width:20px;text-align:center;display:none;">0</span>
+                </div>
+                <!-- Notification Popup -->
+                <div id="notification-popup" style="display:none;position:absolute;top:60px;right:40px;z-index:999;background:#fff;border-radius:10px;box-shadow:0 2px 16px #0003;padding:0;min-width:320px;max-width:400px;max-height:400px;overflow-y:auto;">
+                  <div style="padding:12px 16px;font-weight:bold;font-size:16px;border-bottom:1px solid #eee;">Thông báo
+                    <span id="notification-mark-read" style="float:right;font-size:13px;color:#0B41FF;cursor:pointer;">Đánh dấu đã đọc</span>
+                  </div>
+                  <ul id="notification-list" style="list-style:none;padding:0;margin:0;"></ul>
+                </div>
                 <div class="search-bar">
                     <input type="text" placeholder="Enter Search" id="eventSearchInput" style="color: #6A778B; font-size: 14px; font-weight: bold; width: 161px; background: none; border: none; z-index:2;" />
                     <img src="https://figma-alpha-api.s3.us-west-2.amazonaws.com/images/5c0f54db-ffe1-4c35-b9e2-893e888c3290" style="border-radius: 99px; width: 16px; height: 16px; object-fit: fill; z-index:2;" />
@@ -134,11 +142,6 @@
                                     <div style="display: flex; flex-direction: column; align-items: flex-start; width: 100%; gap: 2px;">
                                         <span class="event-title" style="color: #2C5A41; font-size: 13px; font-weight: bold; word-break: break-word; white-space: pre-line;">{{ event.todo.task }}</span>
                                         <span class="event-time" style="color: #2C5A41; font-size: 12px; font-weight: bold; word-break: break-word; white-space: pre-line;">{{ event.todo.start_time.strftime('%H:%M') if event.todo.start_time else '' }}-{{ event.todo.end_time.strftime('%H:%M') if event.todo.end_time else '' }}</span>
-                                        {% if event.todo.repeat and event.todo.repeat != 'none' %}
-                                            <span style="color: #FF7A00; font-size: 11px; font-weight: bold;">Lặp: 
-                                                {% if event.todo.repeat == 'daily' %}Hàng ngày{% elif event.todo.repeat == 'weekly' %}Hàng tuần{% elif event.todo.repeat == 'monthly' %}Hàng tháng{% elif event.todo.repeat == 'yearly' %}Hàng năm{% endif %}
-                                            </span>
-                                        {% endif %}
                                         <span style="color: #2C5A41; font-size: 11px; white-space: pre-line; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ event.todo.description }}</span>
                                     </div>
                                 </div>
@@ -152,5 +155,6 @@
     </div>
 </div>
 <script src="/static/js/week.js"></script>
+<script src="/static/js/notification.js"></script>
 </body>
 </html>

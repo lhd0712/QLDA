@@ -5,6 +5,32 @@ from datetime import date as dt_date
 import calendar
 import os
 from copy import copy
+from modules.notification import create_event_notifications_for_user
+
+def is_event_on_date(todo, d):
+    if not todo.start_date:
+        return False
+    if todo.repeat == 'daily':
+        if todo.end_date and d > todo.end_date:
+            return False
+        return d >= todo.start_date
+    elif todo.repeat == 'weekly':
+        if todo.end_date and d > todo.end_date:
+            return False
+        days_diff = (d - todo.start_date).days
+        return d >= todo.start_date and days_diff % 7 == 0 and days_diff >= 0
+    elif todo.repeat == 'monthly':
+        if todo.end_date and d > todo.end_date:
+            return False
+        months_diff = (d.year - todo.start_date.year) * 12 + (d.month - todo.start_date.month)
+        return d >= todo.start_date and d.day == todo.start_date.day and months_diff >= 0
+    elif todo.repeat == 'yearly':
+        if todo.end_date and d > todo.end_date:
+            return False
+        years_diff = d.year - todo.start_date.year
+        return d >= todo.start_date and d.day == todo.start_date.day and d.month == todo.start_date.month and years_diff >= 0
+    else:
+        return todo.start_date == d
 
 todo_bp = Blueprint('todo', __name__)
 
@@ -30,30 +56,6 @@ def day_view():
     else:
         selected_date = date.today()
     todos = Todo.query.filter_by(user_id=user.id).all()  # lấy tất cả để xử lý repeat
-    def is_event_on_date(todo, d):
-        if not todo.start_date:
-            return False
-        if todo.repeat == 'daily':
-            if todo.end_date and d > todo.end_date:
-                return False
-            return d >= todo.start_date
-        elif todo.repeat == 'weekly':
-            if todo.end_date and d > todo.end_date:
-                return False
-            days_diff = (d - todo.start_date).days
-            return d >= todo.start_date and days_diff % 7 == 0 and days_diff >= 0
-        elif todo.repeat == 'monthly':
-            if todo.end_date and d > todo.end_date:
-                return False
-            months_diff = (d.year - todo.start_date.year) * 12 + (d.month - todo.start_date.month)
-            return d >= todo.start_date and d.day == todo.start_date.day and months_diff >= 0
-        elif todo.repeat == 'yearly':
-            if todo.end_date and d > todo.end_date:
-                return False
-            years_diff = d.year - todo.start_date.year
-            return d >= todo.start_date and d.day == todo.start_date.day and d.month == todo.start_date.month and years_diff >= 0
-        else:
-            return todo.start_date == d
     # Lọc event cho ngày được chọn (clone object để không ghi đè start_time/end_time)
     todos_today = []
     for todo in todos:
@@ -63,6 +65,8 @@ def day_view():
                 t.start_time = datetime.combine(selected_date, t.start_time)
             if t.end_time:
                 t.end_time = datetime.combine(selected_date, t.end_time)
+            # Chỉ thêm thuộc tính is_repeat_source, không ảnh hưởng đến lọc event lặp
+            t.is_repeat_source = (todo.repeat != 'none' and todo.start_date == selected_date)
             todos_today.append(t)
     # Lấy event ngày mai (bao gồm lặp, clone object)
     tomorrow = selected_date + timedelta(days=1)
@@ -146,6 +150,8 @@ def add_event():
         )
         db.session.add(todo)
         db.session.commit()
+        # Tạo notification cho user khi thêm event
+        create_event_notifications_for_user(user.id)
         return redirect(url_for('todo.day_view', popup='1'))
     return render_template('addevent.html', tag_list=tag_list)
 
@@ -181,6 +187,8 @@ def edit_event(event_id):
         todo.location = request.form.get('location')
         todo.description = request.form.get('description')
         db.session.commit()
+        # Tạo notification cho user khi sửa event
+        create_event_notifications_for_user(user.id)
         return redirect(url_for('todo.day_view', popup='1'))
     return render_template('edit_event.html', todo=todo, tag_list=tag_list)
 
@@ -212,30 +220,6 @@ def week_view():
     todos = Todo.query.filter_by(user_id=user.id).all()
     events_by_day = {}
     events_in_week = []
-    def is_event_on_date(todo, d):
-        if not todo.start_date:
-            return False
-        if todo.repeat == 'daily':
-            if todo.end_date and d > todo.end_date:
-                return False
-            return d >= todo.start_date
-        elif todo.repeat == 'weekly':
-            if todo.end_date and d > todo.end_date:
-                return False
-            days_diff = (d - todo.start_date).days
-            return d >= todo.start_date and days_diff % 7 == 0 and days_diff >= 0
-        elif todo.repeat == 'monthly':
-            if todo.end_date and d > todo.end_date:
-                return False
-            months_diff = (d.year - todo.start_date.year) * 12 + (d.month - todo.start_date.month)
-            return d >= todo.start_date and d.day == todo.start_date.day and months_diff >= 0
-        elif todo.repeat == 'yearly':
-            if todo.end_date and d > todo.end_date:
-                return False
-            years_diff = d.year - todo.start_date.year
-            return d >= todo.start_date and d.day == todo.start_date.day and d.month == todo.start_date.month and years_diff >= 0
-        else:
-            return todo.start_date == d
     for d in week_days:
         # Lấy event cho ngày d (bao gồm lặp)
         todos_day = []

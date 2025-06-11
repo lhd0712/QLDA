@@ -52,3 +52,22 @@ table.calendar td:hover {
 	cursor: pointer;
 	border-radius: 50%;
 }
+#notification-bell img {
+  transition: filter 0.2s;
+}
+#notification-bell:hover img {
+  filter: brightness(0.7);
+}
+#notification-badge {
+  box-shadow: 0 1px 4px #0002;
+}
+#notification-popup {
+  animation: fadeInNotif 0.2s;
+}
+@keyframes fadeInNotif {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: none; }
+}
+#notification-list li:hover {
+  background: #F0F6FF !important;
+}

@@ -30,3 +30,13 @@ class Todo(db.Model):
     tag = db.Column(db.String(64), nullable=True)
     location = db.Column(db.String(255), nullable=True)
     description = db.Column(db.Text, nullable=True)
+
+class Notification(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    todo_id = db.Column(db.Integer, db.ForeignKey('todo.id'), nullable=True)
+    title = db.Column(db.String(255), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    time = db.Column(db.DateTime, nullable=False)
+    is_read = db.Column(db.Boolean, default=False, nullable=False)
+    created_at = db.Column(db.DateTime, server_default=db.func.now(), nullable=False)
